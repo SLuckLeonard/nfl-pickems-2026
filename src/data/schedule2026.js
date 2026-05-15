@@ -1,5 +1,6 @@
 // TODO: VERIFY ALL GAMES against https://www.nfl.com before the season.
-// Week 1 is confirmed. Weeks 2-18 are stubs — populate from official schedule.
+// Week 1 games below are confirmed except where marked TODO.
+// Weeks 2-18 are stubs — populate from the official NFL schedule.
 // Run the app in dev mode: a console.warn fires if game count != 272.
 
 export const SCHEDULE = [
@@ -161,18 +162,21 @@ export const SCHEDULE = [
     internationalCity: null,
     network: 'CBS',
   },
-  {
-    gameId: '2026_W1_WAS_DEN',
-    week: 1,
-    date: '2026-09-13',
-    kickoff: '2026-09-13T16:25:00-04:00',
-    homeTeam: 'WAS',
-    awayTeam: 'DEN',
-    location: 'Northwest Stadium, Landover, MD',
-    isInternational: false,
-    internationalCity: null,
-    network: 'CBS',
-  },
+  // TODO: VERIFY — Washington's Week 1 opponent is unconfirmed.
+  // DEN plays KC on Monday Night Football (Sept 14), so WAS vs DEN (from the
+  // original spec) was an error. Fill in the correct opponent from NFL.com.
+  // {
+  //   gameId: '2026_W1_WAS_???',
+  //   week: 1,
+  //   date: '2026-09-13',
+  //   kickoff: '2026-09-13T16:25:00-04:00',
+  //   homeTeam: 'WAS',
+  //   awayTeam: '???',
+  //   location: 'Northwest Stadium, Landover, MD',
+  //   isInternational: false,
+  //   internationalCity: null,
+  //   network: 'CBS',
+  // },
   {
     gameId: '2026_W1_NYG_DAL',
     week: 1,
