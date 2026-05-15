@@ -2,22 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// TODO: Fill in your Firebase project config before running the app.
-// Steps:
-//   1. Go to https://console.firebase.google.com
-//   2. Create project "nfl-pickems-2026"
-//   3. Enable Firestore (test mode) and Anonymous Authentication
-//   4. Project Settings > General > Your Apps > Add Web App
-//   5. Copy the firebaseConfig object and paste it below
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Values are loaded from .env.local (never committed to git).
+// Copy .env.example → .env.local and fill in your Firebase project values.
 const firebaseConfig = {
-  apiKey: "AIzaSyB2vPsjgR2QPYbVPVh1zu68D8DEuxG3k9w",
-  authDomain: "nfl-pickems-2026.firebaseapp.com",
-  projectId: "nfl-pickems-2026",
-  storageBucket: "nfl-pickems-2026.firebasestorage.app",
-  messagingSenderId: "636807129541",
-  appId: "1:636807129541:web:b628eb4aa7fdf91193c3ac",
-  measurementId: "G-MEWBZ1T9PS"
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);

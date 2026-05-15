@@ -13,22 +13,24 @@ Do this once before running the app.
 3. Enable **Firestore Database** — start in test mode
 4. Enable **Anonymous Authentication** (Authentication → Sign-in method → Anonymous → Enable)
 5. Go to Project Settings → General → Your Apps → **Add Web App**
-6. Copy the `firebaseConfig` object
-7. Create the file `src/firebase/config.js` and paste your config:
+6. Copy the config values shown under "SDK setup and configuration"
+7. In the project root, copy `.env.example` to `.env.local` and fill in your values:
 
-```js
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-
-const firebaseConfig = {
-  // paste your config here
-};
-
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+```bash
+cp .env.example .env.local
 ```
+
+```
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+```
+
+> **Important:** `.env.local` is listed in `.gitignore` and will never be committed. Never paste Firebase credentials directly into source files.
 
 8. Set Firestore security rules in the Firebase console (Rules tab):
 
