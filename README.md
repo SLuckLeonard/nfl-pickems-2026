@@ -32,7 +32,16 @@ VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
 > **Important:** `.env.local` is listed in `.gitignore` and will never be committed. Never paste Firebase credentials directly into source files.
 
-8. Set Firestore security rules in the Firebase console (Rules tab):
+8. **After your first run**, designate the admin player (who can edit O/U lines and use admin controls):
+   - Open the app in your browser and enter your name when prompted
+   - Open the browser console and run: `localStorage.getItem('nfl_player_id')`
+   - Copy the returned UID and add it to `.env.local`:
+     ```
+     VITE_ADMIN_PLAYER_ID=paste_your_uid_here
+     ```
+   - Restart the dev server (`npm run dev`) — the O/U Lines and Admin Controls sections in `/results` will now be visible only to you
+
+9. Set Firestore security rules in the Firebase console (Rules tab):
 
 ```
 rules_version = '2';

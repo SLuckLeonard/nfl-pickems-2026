@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { usePlayerIdentity } from './hooks/usePlayerIdentity.js';
 import NavBar from './components/NavBar.jsx';
+import SetupScreen from './components/SetupScreen.jsx';
 import PreSeasonPickSheet from './pages/PreSeasonPickSheet.jsx';
 import WeeklyPickSheet from './pages/WeeklyPickSheet.jsx';
 import ResultsEntry from './pages/ResultsEntry.jsx';
@@ -8,6 +10,14 @@ import Dashboard from './pages/Dashboard.jsx';
 import Charts from './pages/Charts.jsx';
 
 export default function App() {
+  const { playerId, isReady, setupPlayer } = usePlayerIdentity();
+
+  // Wait for localStorage check to finish (avoids flash of setup screen)
+  if (!isReady) return null;
+
+  // First visit — show full-screen setup before anything else
+  if (!playerId) return <SetupScreen onSetup={setupPlayer} />;
+
   return (
     <div className="app">
       <NavBar />
