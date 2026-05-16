@@ -1,1 +1,138 @@
-/* Phase 5: Pick sheet styles — week accordion, game cards, progress bar. */
+/* ── Game Grid ───────────────────────────────────────────────────────────── */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 900px) {
+  .game-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .game-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.picksheet-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.picksheet-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* ── Progress Bar ────────────────────────────────────────────────────────── */
+.picksheet-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.picksheet-progress__bar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-surface-el);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.picksheet-progress__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 3px;
+  transition: width 200ms ease;
+}
+
+.picksheet-progress__label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Autosave Status ─────────────────────────────────────────────────────── */
+.picksheet-autosave { font-size: 12px; color: var(--color-text-muted); }
+.picksheet-autosave--ok  { color: var(--color-success); }
+.picksheet-autosave--err { color: var(--color-error); }
+
+/* ── Week Accordion ──────────────────────────────────────────────────────── */
+.picksheet-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.picksheet-week {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.picksheet-week__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-el);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition);
+}
+
+.picksheet-week__header:hover {
+  background: rgba(0, 212, 255, 0.06);
+}
+
+.picksheet-week--open .picksheet-week__header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.picksheet-week__title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.picksheet-week__count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* CSS-only chevron arrow */
+.picksheet-week__chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.picksheet-week--open .picksheet-week__chevron {
+  transform: rotate(-135deg) translateY(-2px);
+}
+
+.picksheet-week__body {
+  padding: var(--space-md);
+}
