@@ -1,1 +1,135 @@
-/* Phase 8: Charts page styles — chart containers, legend, tooltip overrides. */
+/* ── Chart Sections ─────────────────────────────────────────────────────── */
+
+.chart-section {
+  margin-bottom: var(--space-xl);
+}
+
+.chart-section__desc {
+  font-size: 13px;
+  margin-bottom: var(--space-md);
+}
+
+/* ── Sub-chart label (used in division pair) ────────────────────────────── */
+
+.chart-sublabel {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Side-by-side chart pair ────────────────────────────────────────────── */
+
+.chart-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+@media (max-width: 900px) {
+  .chart-pair { grid-template-columns: 1fr; }
+}
+
+/* ── Custom dark tooltip ────────────────────────────────────────────────── */
+
+.chart-tooltip {
+  background: var(--color-surface-el);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  min-width: 130px;
+}
+
+.chart-tooltip__label {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.chart-tooltip__item {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+/* ── O/U Hit Rate — per-team chip grid ──────────────────────────────────── */
+
+.ou-team-grids {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+@media (max-width: 640px) {
+  .ou-team-grids { grid-template-columns: 1fr; }
+}
+
+.ou-team-grid {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.ou-team-grid__label {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+}
+
+.ou-team-grid__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ou-chip {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: default;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-el);
+  color: var(--color-text-muted);
+}
+
+.ou-chip--correct {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.ou-chip--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-error);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.ou-chip--neutral {
+  background: var(--color-surface-el);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+.chart-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-xl) 0;
+}
