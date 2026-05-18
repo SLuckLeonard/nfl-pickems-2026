@@ -3,7 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { isLocked } from '../data/weekLocks.js';
-import { usePlayerPicks, useResults } from '../hooks/useFirestore.js';
+import { usePlayerPicks, useResults, useSeasonConfig } from '../hooks/useFirestore.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
 import GameCard from '../components/GameCard.jsx';
 import LockBanner from '../components/LockBanner.jsx';
@@ -21,6 +21,7 @@ export default function PreSeasonPickSheet() {
   const { playerId, playerName } = usePlayerIdentity();
   const { picks: savedPicks, loading } = usePlayerPicks(playerId, 'preseason');
   const { results } = useResults();
+  const { config  } = useSeasonConfig();
 
   const [localPicks, setLocalPicks] = useState({});
   const [openWeeks, setOpenWeeks]   = useState(() => new Set([1]));
@@ -35,7 +36,8 @@ export default function PreSeasonPickSheet() {
     }
   }, [loading, savedPicks]);
 
-  const systemLocked    = isLocked('preseason');
+  // Locked if: hardcoded deadline passed, admin manually locked it, or player submitted
+  const systemLocked    = isLocked('preseason') || (config?.locked ?? false);
   const submittedLocked = savedPicks?.locked === true;
   const locked          = systemLocked || submittedLocked;
 

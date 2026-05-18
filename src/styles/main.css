@@ -189,6 +189,19 @@ button {
   color: var(--color-text-muted);
 }
 
+.stat-card__value--accent {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+.stat-card__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Utility ────────────────────────────────────────────────────────────── */
+.text-muted { color: var(--color-text-muted); }
+
 /* ── Game Card ──────────────────────────────────────────────────────────── */
 .game-card {
   background: var(--color-surface);

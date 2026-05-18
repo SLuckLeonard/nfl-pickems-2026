@@ -4,7 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { isLocked } from '../data/weekLocks.js';
-import { usePlayerPicks, useResults } from '../hooks/useFirestore.js';
+import { usePlayerPicks, useResults, useSeasonConfig } from '../hooks/useFirestore.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
 import GameCard from '../components/GameCard.jsx';
 import LockBanner from '../components/LockBanner.jsx';
@@ -19,12 +19,14 @@ export default function WeeklyPickSheet() {
   const { playerId, playerName } = usePlayerIdentity();
   const { picks: savedPicks }    = usePlayerPicks(playerId, `week_${week}`);
   const { results }              = useResults();
+  const { config }               = useSeasonConfig();
 
   const [localPicks, setLocalPicks] = useState({});
   const [saveStatus, setSaveStatus] = useState('idle');
 
   const weekGames = SCHEDULE.filter(g => g.week === week);
-  const locked    = isLocked(week);
+  // Locked if the hardcoded kickoff time has passed OR the admin manually locked this week
+  const locked    = isLocked(week) || (config?.weekLocks?.[week] ?? false);
 
   // Sync localPicks from Firestore when week changes or savedPicks arrives.
   // The type check prevents loading a different week's stale data.

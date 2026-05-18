@@ -1,1 +1,228 @@
-/* Phase 7: Dashboard styles — stat cards grid, H2H layout, O/U tracker table. */
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+
+.dash-section {
+  margin-bottom: var(--space-xl);
+}
+
+.dash-section__note {
+  font-size: 13px;
+  margin-bottom: var(--space-md);
+}
+
+/* ── 4a: H2H Layout ─────────────────────────────────────────────────────── */
+
+.h2h-layout {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-md);
+}
+
+@media (max-width: 640px) {
+  .h2h-layout { flex-direction: column; }
+}
+
+.player-card {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  min-width: 0;
+}
+
+.player-card__name {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+  margin-bottom: var(--space-md);
+}
+
+.player-card__stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.player-card__stat:last-child {
+  border-bottom: none;
+}
+
+.player-card__label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-muted);
+}
+
+.player-card__val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.h2h-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-md) var(--space-lg);
+  min-width: 160px;
+}
+
+.h2h-headline {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-text);
+}
+
+.h2h-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--space-xs);
+}
+
+/* ── 4b: Stat cards grid ────────────────────────────────────────────────── */
+
+.stat-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 900px) {
+  .stat-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .stat-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 4c: Sortable weekly table ──────────────────────────────────────────── */
+
+.dash-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+
+.sortable-th:hover { color: var(--color-accent); }
+.sortable-th--active { color: var(--color-accent); }
+
+.cell-pct {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+/* Shared cell color classes (also used in 4g) */
+.cell--muted   { color: var(--color-text-muted); }
+.cell--accent  { color: var(--color-accent); }
+.cell--success { color: var(--color-success); }
+.cell--error   { color: var(--color-error); }
+.cell--p1      { color: var(--color-accent); }
+.cell--p2      { color: var(--color-warning); }
+
+/* ── 4d: Rolling stats ──────────────────────────────────────────────────── */
+
+.rolling-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+@media (max-width: 640px) {
+  .rolling-grid { grid-template-columns: 1fr; }
+}
+
+.rolling-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.rolling-card__name {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+  margin-bottom: var(--space-md);
+}
+
+.rolling-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rolling-stat:last-child {
+  border-bottom: none;
+}
+
+.rolling-stat__label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.rolling-stat__value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+/* ── 4e: Division splits ────────────────────────────────────────────────── */
+
+.split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+@media (max-width: 1024px) {
+  .split-grid { grid-template-columns: 1fr; }
+}
+
+.split-conf-header {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── 4f: O/U tracker ────────────────────────────────────────────────────── */
+
+.ou-close-call {
+  background: rgba(245, 158, 11, 0.05) !important;
+}
+
+.ou-close-call td {
+  color: var(--color-warning) !important;
+}
+
+/* ── 4g: Upset tracker ──────────────────────────────────────────────────── */
+/* Uses shared .cell--success / .cell--error / .cell--muted for call status */

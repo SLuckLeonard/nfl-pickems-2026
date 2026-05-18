@@ -6,6 +6,15 @@ import { auth, db } from '../firebase/config.js';
 const KEY_ID   = 'nfl_player_id';
 const KEY_NAME = 'nfl_player_name';
 
+// TODO (post-Phase 8): Multi-device identity linking.
+// Each device creates an independent anonymous identity, so the same player
+// gets a different UID on their phone vs computer. To fix this, add a
+// "Link this device" screen where the user enters their player ID code from
+// another device to adopt that identity (overwrite localStorage KEY_ID/KEY_NAME
+// with the entered values and re-validate against Firestore players/{id}).
+// The code to share would just be the raw playerId — show it in PlayerBanner
+// or a settings screen so the user can copy it.
+
 /**
  * Manages the current player's anonymous identity.
  *
