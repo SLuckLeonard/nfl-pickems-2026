@@ -68,12 +68,19 @@ export default function ResultsEntry() {
   async function saveResults() {
     setSaveStatus('saving');
     try {
+      // Build a clean copy — filters out any null/undefined entries that
+      // Firestore would reject, and avoids passing the live state reference.
+      const games = Object.fromEntries(
+        Object.entries(localResults).filter(([, v]) => v != null)
+      );
+      console.log('[Results] writing to Firestore:', games);
       await setDoc(doc(db, 'results', '2026'), {
-        games:       localResults,
+        games,
         lastUpdated: serverTimestamp(),
-      }, { merge: true });
+      });
       setSaveStatus('saved');
-    } catch {
+    } catch (e) {
+      console.error('[Results] Firestore write failed:', e);
       setSaveStatus('error');
     }
   }

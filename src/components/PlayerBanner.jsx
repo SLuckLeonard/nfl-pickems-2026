@@ -2,14 +2,23 @@ import { useState } from 'react';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
 
 export default function PlayerBanner() {
-  const { playerName, isReady, updatePlayerName } = usePlayerIdentity();
+  const { playerId, playerName, isReady, updatePlayerName } = usePlayerIdentity();
 
   const [mode,      setMode]      = useState('idle'); // 'idle' | 'rename'
   const [draftName, setDraftName] = useState('');
   const [saving,    setSaving]    = useState(false);
+  const [copied,    setCopied]    = useState(false);
 
   // Not ready or no name (shouldn't occur — App gates on playerId first)
   if (!isReady || !playerName) return null;
+
+  function handleCopyId() {
+    if (!playerId) return;
+    navigator.clipboard.writeText(playerId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   if (mode === 'rename') {
     return (
@@ -46,6 +55,13 @@ export default function PlayerBanner() {
   return (
     <div className="player-banner">
       <span className="player-banner__name" title={playerName}>{playerName}</span>
+      <button
+        className="btn btn--ghost btn--sm"
+        onClick={handleCopyId}
+        title="Copy your Player ID to link another device"
+      >
+        {copied ? 'Copied!' : 'Copy ID'}
+      </button>
       <button
         className="btn btn--ghost btn--sm"
         onClick={() => { setDraftName(playerName); setMode('rename'); }}

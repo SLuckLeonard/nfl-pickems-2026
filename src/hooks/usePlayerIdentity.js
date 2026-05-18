@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { signInAnonymously } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase/config.js';
 
 const KEY_ID   = 'nfl_player_id';
@@ -80,5 +80,29 @@ export function usePlayerIdentity() {
     setPlayerName(trimmed);
   }
 
-  return { playerId, playerName, isReady, setupPlayer, updatePlayerName };
+  /**
+   * Link this device to an existing player by entering their Player ID.
+   * Looks up the ID in Firestore — if found, adopts that identity locally.
+   * No new anonymous auth session is created.
+   */
+  async function linkDevice(existingPlayerId) {
+    const trimmed = existingPlayerId.trim();
+    if (!trimmed) return { success: false, error: 'No ID entered.' };
+
+    try {
+      const snap = await getDoc(doc(db, 'players', trimmed));
+      if (!snap.exists()) return { success: false, error: 'Player ID not found.' };
+
+      const data = snap.data();
+      localStorage.setItem(KEY_ID,   trimmed);
+      localStorage.setItem(KEY_NAME, data.playerName);
+      setPlayerId(trimmed);
+      setPlayerName(data.playerName);
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Could not reach the server. Try again.' };
+    }
+  }
+
+  return { playerId, playerName, isReady, setupPlayer, updatePlayerName, linkDevice };
 }

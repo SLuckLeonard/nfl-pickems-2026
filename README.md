@@ -106,6 +106,13 @@ Make sure your repo's GitHub Pages source is set to the `gh-pages` branch (Setti
 
 ---
 
+## Planned Future Features
+
+- **Live standings and playoff bracket view** based on pre-season picks — updates as weekly results are entered, showing projected division winners, playoff seeds, and a bracket view derived from each player's pre-season picks.
+- **Upset definition upgrade** — switch from "away team wins" to a record-based definition (favorite = team with better record) after Week 4 of the season, once meaningful win/loss data is available.
+
+---
+
 ## License
 
 MIT
