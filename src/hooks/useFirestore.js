@@ -57,6 +57,7 @@ export function usePlayerPicks(playerId, type) {
       setLoading(false);
       return;
     }
+    setLoading(true); // reset while waiting for the new subscription to respond
     const docId = `${playerId}_${type}`;
     const unsub = onSnapshot(doc(db, 'picks', docId), (snap) => {
       setPicks(snap.exists() ? snap.data() : null);

@@ -21,7 +21,7 @@ const GAMES_BY_WEEK = WEEKS_IN_SCHEDULE.reduce((acc, week) => {
 const TOTAL_GAMES = SCHEDULE.length;
 
 export default function PreSeasonPickSheet() {
-  const { playerId, playerName } = usePlayerIdentity();
+  const { playerId, playerName, isReady } = usePlayerIdentity();
   const { picks: savedPicks, loading } = usePlayerPicks(playerId, 'preseason');
   const { results } = useResults();
   const { config  } = useSeasonConfig();
@@ -43,18 +43,20 @@ export default function PreSeasonPickSheet() {
   const initialized        = useRef(false);
   const bracketInitialized = useRef(false);
 
-  // Initialize from Firestore exactly once (avoid overwriting in-progress edits)
+  // Initialize from Firestore exactly once. Require savedPicks to be truthy so the
+  // flag isn't set on the null-playerId pass-through (where loading=false but
+  // Firestore hasn't responded yet), which would block the real data from loading.
   useEffect(() => {
-    if (!loading && !initialized.current) {
+    if (!loading && !initialized.current && savedPicks) {
       initialized.current = true;
-      if (savedPicks?.picks) setLocalPicks(savedPicks.picks);
+      setLocalPicks(savedPicks.picks ?? {});
     }
   }, [loading, savedPicks]);
 
   useEffect(() => {
-    if (!loadingBracket && !bracketInitialized.current) {
+    if (!loadingBracket && !bracketInitialized.current && savedBracketPicks) {
       bracketInitialized.current = true;
-      if (savedBracketPicks?.picks) setLocalBracketPicks(savedBracketPicks.picks);
+      setLocalBracketPicks(savedBracketPicks.picks ?? {});
     }
   }, [loadingBracket, savedBracketPicks]);
 
@@ -116,7 +118,7 @@ export default function PreSeasonPickSheet() {
     });
   }
 
-  if (loading) {
+  if (!isReady || loading) {
     return <div className="page"><p className="placeholder-note">Loading picks…</p></div>;
   }
 

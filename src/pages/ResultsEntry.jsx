@@ -210,9 +210,6 @@ export default function ResultsEntry() {
       {/* ── Section 2: O/U Lines (visible to all, editable by admin only) ── */}
       <section className="results-section">
         <h2>Over/Under Lines</h2>
-        <p className="text-muted" style={{ fontSize: 13, marginBottom: 'var(--space-md)' }}>
-          Set each team's season win total O/U line. Values like 9.5, 11.0 are typical.
-        </p>
 
         <div className="ou-editor">
           {DIVISIONS.map(({ conf, div, teams }) => (
