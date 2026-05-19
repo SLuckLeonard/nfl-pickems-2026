@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import PlayerBanner from './PlayerBanner.jsx';
 
 const NAV_LINKS = [
-  { to: '/preseason', label: 'Pick Sheet' },
+  { to: '/preseason', label: 'Picks & Standings' },
   { to: '/week/1',    label: 'Weekly Picks' },
   { to: '/results',   label: 'Results' },
   { to: '/dashboard', label: 'Dashboard' },

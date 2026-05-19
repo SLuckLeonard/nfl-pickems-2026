@@ -103,6 +103,16 @@ export default function ResultsEntry() {
     await setDoc(doc(db, 'season', '2026'), { locked: !current }, { merge: true });
   }
 
+  async function toggleBracketLock() {
+    const current = config?.bracketLocked ?? false;
+    await setDoc(doc(db, 'season', '2026'), { bracketLocked: !current }, { merge: true });
+  }
+
+  async function toggleBracketHidden() {
+    const current = config?.bracketHidden ?? true;
+    await setDoc(doc(db, 'season', '2026'), { bracketHidden: !current }, { merge: true });
+  }
+
   async function toggleWeekLock(w) {
     const currentLocks = config?.weekLocks ?? {};
     const current      = currentLocks[w] ?? false;
@@ -286,6 +296,31 @@ export default function ResultsEntry() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Bracket Controls */}
+          <div className="admin-group">
+            <h3>Bracket Controls</h3>
+
+            <div className="lock-toggle-row">
+              <span>Opponent&apos;s Bracket</span>
+              <button
+                className={`btn btn--sm ${config?.bracketHidden ?? true ? 'btn--ghost' : 'btn--danger'}`}
+                onClick={toggleBracketHidden}
+              >
+                {config?.bracketHidden ?? true ? 'HIDDEN — click to reveal' : 'VISIBLE — click to hide'}
+              </button>
+            </div>
+
+            <div className="lock-toggle-row">
+              <span>Bracket Picks</span>
+              <button
+                className={`btn btn--sm ${config?.bracketLocked ? 'btn--danger' : 'btn--ghost'}`}
+                onClick={toggleBracketLock}
+              >
+                {config?.bracketLocked ? 'LOCKED — click to unlock' : 'OPEN — click to lock'}
+              </button>
             </div>
           </div>
 
