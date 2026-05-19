@@ -871,6 +871,14 @@ button {
   gap: var(--space-sm);
 }
 
+/* ── Team logo ───────────────────────────────────────────────────────────── */
+
+.team-logo {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-main {

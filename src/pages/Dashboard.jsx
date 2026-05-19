@@ -4,6 +4,7 @@ import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { TEAMS } from '../data/teams.js';
 import StatCard from '../components/StatCard.jsx';
+import TeamLogo from '../components/TeamLogo.jsx';
 import {
   weeklyAccuracy,
   overallAccuracy,
@@ -684,9 +685,9 @@ export default function Dashboard() {
                   const p2p = upsetCell(row.p2PrePicked,    row.p2PreCalled);
                   return (
                     <tr key={row.gameId}>
-                      <td>{row.away} @ {row.home}</td>
+                      <td><TeamLogo teamId={row.away} size={18} /> @ <TeamLogo teamId={row.home} size={18} /></td>
                       <td>{row.week}</td>
-                      <td>{TEAMS[row.winner]?.abbr ?? row.winner}</td>
+                      <td><TeamLogo teamId={row.winner} size={18} /></td>
                       <td className={p1w.cls}>{p1w.label}</td>
                       <td className={p1p.cls}>{p1p.label}</td>
                       <td className={p2w.cls}>{p2w.label}</td>

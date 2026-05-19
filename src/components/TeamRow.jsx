@@ -1,5 +1,6 @@
 import { TEAMS } from '../data/teams.js';
 import { ouStatus } from '../engine/statsEngine.js';
+import TeamLogo from './TeamLogo.jsx';
 
 const STATUS_LABEL = { over: 'OVER', under: 'UNDER', push: 'PUSH' };
 const STATUS_CLASS = { over: 'text-success', under: 'text-error', push: 'text-warning' };
@@ -30,7 +31,7 @@ export default function TeamRow({ teamId, ouLine, p1Predicted, p2Predicted, actu
   return (
     <tr className={isCloseCall ? 'row--close-call' : undefined}>
       <td>
-        <span className="team-abbr">{team?.abbr ?? teamId}</span>
+        <TeamLogo teamId={teamId} size={20} />
         <span className="text-muted"> {team?.city}</span>
       </td>
       <td className="font-mono">{ouLine ?? '—'}</td>

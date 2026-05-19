@@ -7,6 +7,7 @@ import { useResults, useSeasonConfig } from '../hooks/useFirestore.js';
 import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
 import WeekNav from '../components/WeekNav.jsx';
+import TeamLogo from '../components/TeamLogo.jsx';
 
 // Division groupings for the O/U editor
 const DIVISIONS = [
@@ -175,6 +176,7 @@ export default function ResultsEntry() {
                     onClick={() => toggleWinner(game.gameId, game.awayTeam)}
                     disabled={!isAdmin}
                   >
+                    <TeamLogo teamId={game.awayTeam} size={24} />
                     <span className="result-team-btn__abbr">{away?.abbr ?? game.awayTeam}</span>
                     <span className="result-team-btn__name">{away?.name ?? game.awayTeam}</span>
                   </button>
@@ -184,6 +186,7 @@ export default function ResultsEntry() {
                     onClick={() => toggleWinner(game.gameId, game.homeTeam)}
                     disabled={!isAdmin}
                   >
+                    <TeamLogo teamId={game.homeTeam} size={24} />
                     <span className="result-team-btn__abbr">{home?.abbr ?? game.homeTeam}</span>
                     <span className="result-team-btn__name">{home?.name ?? game.homeTeam}</span>
                   </button>

@@ -1,4 +1,5 @@
 import { TEAMS } from '../data/teams.js';
+import TeamLogo from './TeamLogo.jsx';
 
 /**
  * Single game pick card. Used in both PreSeasonPickSheet and WeeklyPickSheet.
@@ -84,7 +85,7 @@ function TeamButton({ teamId, label, picked, result, locked, onPick }) {
       aria-label={`Pick ${team?.name ?? teamId}`}
       aria-pressed={hasPicked}
     >
-      <span className="game-card__team-abbr">{team?.abbr ?? teamId}</span>
+      <TeamLogo teamId={teamId} size={28} className="game-card__team-abbr" />
       <span className="game-card__team-name">{team?.name ?? teamId}</span>
       <span className="game-card__team-label">{label}</span>
     </button>
