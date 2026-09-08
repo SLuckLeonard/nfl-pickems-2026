@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: '/results',   label: 'Results' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/charts',    label: 'Charts' },
+  { to: '/share',     label: 'Share' },
 ];
 
 export default function NavBar() {

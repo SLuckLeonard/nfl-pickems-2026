@@ -20,6 +20,17 @@ export default function PlayerBanner() {
     });
   }
 
+  function handleResetDevice() {
+    const ok = window.confirm(
+      'Reset this device? You\'ll re-enter your name on next load. ' +
+      'Your account (same ID) is kept — use this after an admin season wipe.'
+    );
+    if (!ok) return;
+    localStorage.removeItem('nfl_player_id');
+    localStorage.removeItem('nfl_player_name');
+    window.location.reload();
+  }
+
   if (mode === 'rename') {
     return (
       <form
@@ -68,6 +79,13 @@ export default function PlayerBanner() {
         title="Rename player"
       >
         Rename
+      </button>
+      <button
+        className="btn btn--ghost btn--sm"
+        onClick={handleResetDevice}
+        title="Sign out on this device and re-enter your name"
+      >
+        Reset device
       </button>
     </div>
   );

@@ -155,12 +155,17 @@ npm run dev
 ```
 
 1. Open the app and enter your name when prompted
-2. Open the browser console and run: `localStorage.getItem('nfl_player_id')`
-3. Copy the returned UID and add it to `.env.local`:
+2. Add your name to `.env.local` (case-insensitive, survives a season reset):
    ```
-   VITE_ADMIN_PLAYER_ID=paste_your_uid_here
+   VITE_ADMIN_NAME=Your Name
    ```
-4. Restart the dev server — admin controls are now visible only to you
+3. Restart the dev server — admin controls are now visible only to you
+
+For a stricter match you can also set `VITE_ADMIN_PLAYER_ID` to your Firebase
+UID (`localStorage.getItem('nfl_player_id')` in the console); it accepts a
+comma-separated list. Either match grants admin. Note the UID is anonymous and
+can rotate on a full season reset, which is why `VITE_ADMIN_NAME` is the
+recommended primary.
 
 ### Firestore Rules
 

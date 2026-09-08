@@ -21,9 +21,18 @@ const DIVISIONS = [
   { conf: 'NFC', div: 'West',  teams: ['ARI', 'LAR', 'SF',  'SEA'] },
 ];
 
+// Admin match: any UID in VITE_ADMIN_PLAYER_ID (comma-separated ok), or a
+// case-insensitive name match on VITE_ADMIN_NAME. The name fallback survives a
+// season reset, where the anonymous auth UID can rotate.
+const ADMIN_IDS = (import.meta.env.VITE_ADMIN_PLAYER_ID ?? '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+const ADMIN_NAME = (import.meta.env.VITE_ADMIN_NAME ?? '').trim().toLowerCase();
+
 export default function ResultsEntry() {
-  const { playerId }             = usePlayerIdentity();
-  const isAdmin                  = playerId === import.meta.env.VITE_ADMIN_PLAYER_ID;
+  const { playerId, playerName } = usePlayerIdentity();
+  const isAdmin =
+    (!!playerId && ADMIN_IDS.includes(playerId)) ||
+    (!!ADMIN_NAME && (playerName ?? '').trim().toLowerCase() === ADMIN_NAME);
   const currentWeek              = useCurrentWeek();
   const { results, loading: resultsLoading } = useResults();
   const { config,  loading: configLoading  } = useSeasonConfig();
@@ -124,12 +133,19 @@ export default function ResultsEntry() {
   async function handleReset() {
     setResetting(true);
     try {
-      const snap = await getDocs(collection(db, 'picks'));
-      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, 'picks', d.id))));
-      setResetConfirm(false);
+      // Full season wipe: every pick, all game results, season config, and both
+      // player records. Deleted generically so stray docs go too.
+      for (const name of ['picks', 'results', 'season', 'players']) {
+        const snap = await getDocs(collection(db, name));
+        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, name, d.id))));
+      }
+      // Drop this device's identity and reload — the app returns to the name
+      // setup screen, which re-creates the player record on the same auth UID.
+      localStorage.removeItem('nfl_player_id');
+      localStorage.removeItem('nfl_player_name');
+      window.location.reload();
     } catch {
       // leave dialog open so user can retry
-    } finally {
       setResetting(false);
     }
   }
@@ -327,8 +343,10 @@ export default function ResultsEntry() {
             {resetConfirm ? (
               <div className="confirm-dialog">
                 <p>
-                  This will delete every document in the <strong>picks</strong> collection from
-                  Firestore. Game results and O/U lines are not affected. This cannot be undone.
+                  This wipes the <strong>entire season</strong> from Firestore — all pre-season,
+                  weekly, and bracket picks, every game result, all O/U lines and locks, and both
+                  player records. You and your friend will each re-enter your name on next visit.
+                  This cannot be undone.
                 </p>
                 <div className="confirm-dialog__actions">
                   <button
@@ -336,7 +354,7 @@ export default function ResultsEntry() {
                     onClick={handleReset}
                     disabled={resetting}
                   >
-                    {resetting ? 'Deleting…' : 'Yes, delete all picks'}
+                    {resetting ? 'Wiping…' : 'Yes, wipe the entire season'}
                   </button>
                   <button
                     className="btn btn--ghost btn--sm"
@@ -349,7 +367,7 @@ export default function ResultsEntry() {
               </div>
             ) : (
               <button className="btn btn--danger" onClick={() => setResetConfirm(true)}>
-                Reset All Picks
+                Reset Entire Season
               </button>
             )}
           </div>

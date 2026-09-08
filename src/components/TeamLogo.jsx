@@ -9,6 +9,9 @@ export default function TeamLogo({ teamId, size = 24, className = '' }) {
       alt={teamId}
       width={size}
       height={size}
+      // ESPN's CDN sends `Access-Control-Allow-Origin: *`, so requesting the
+      // logos anonymously keeps <canvas> untainted for PNG export (Share page).
+      crossOrigin="anonymous"
       className={`team-logo ${className}`}
       style={{ objectFit: 'contain' }}
     />

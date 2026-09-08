@@ -10,6 +10,7 @@ import WeeklyPickSheet from './pages/WeeklyPickSheet.jsx';
 import ResultsEntry from './pages/ResultsEntry.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Charts from './pages/Charts.jsx';
+import SharePage from './pages/SharePage.jsx';
 
 export default function App() {
   const { playerId, isReady, setupPlayer, linkDevice } = usePlayerIdentity();
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/results" element={<ResultsEntry />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/charts" element={<Charts />} />
+            <Route path="/share" element={<SharePage />} />
           </Routes>
         </ErrorBoundary>
       </main>
