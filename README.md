@@ -113,7 +113,7 @@ Results Entry ──────────────────────
 
 1. Go to [console.firebase.google.com](https://console.firebase.google.com)
 2. Create a new project: `nfl-pickems-2026`
-3. Enable **Firestore Database** — start in test mode
+3. Enable **Firestore Database** — choose **production mode** (test mode rules expire after 30 days); rules are set below
 4. Enable **Anonymous Authentication** (Authentication → Sign-in method → Anonymous → Enable)
 5. Go to Project Settings → General → Your Apps → **Add Web App**
 6. Copy the config values shown under "SDK setup and configuration"
@@ -164,20 +164,19 @@ npm run dev
 
 ### Firestore Rules
 
-Set these rules in the Firebase console (Rules tab):
+The rules live in [`firestore.rules`](firestore.rules) and require a signed-in
+user. The app gives every visitor an anonymous auth session on load
+(`src/hooks/useAuthReady.js`), so both players can read and write the shared
+game state while the database stays off the open internet.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
+> **Do not use "test mode" rules.** Test mode installs a rule that stops
+> allowing requests after 30 days — when it expires, every read/write is denied
+> and the app hangs on "loading picks".
 
-> Tighten these rules before sharing beyond personal use.
+Deploy the rules either way:
+
+- **Console:** Firestore → Rules → paste the contents of `firestore.rules` → Publish
+- **CLI:** `npm i -g firebase-tools && firebase login && firebase deploy --only firestore:rules`
 
 ### Run Locally
 
@@ -232,7 +231,7 @@ Each device gets its own anonymous identity by default. To use the same account 
 
 **Current limitations:**
 - Upset definition uses "away team wins" as a proxy. After Week 4, this should be updated to use team win/loss records. See `TODO` comment in `src/engine/statsEngine.js`.
-- Firestore security rules are open — appropriate for private personal use, should be tightened for any public deployment.
+- Firestore security rules only require an anonymous sign-in (any visitor can obtain one). Fine for a private two-player app; tighten to owner-scoped rules for any public deployment.
 - Tiebreaker logic for playoff seeding uses a simplified model. Full NFL tiebreaker rules (strength of victory, strength of schedule, etc.) are not implemented. See `TODO` in `src/engine/bracketEngine.js`.
 
 **Planned improvements:**

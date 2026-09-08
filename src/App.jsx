@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { usePlayerIdentity } from './hooks/usePlayerIdentity.js';
+import { useAuthReady } from './hooks/useAuthReady.js';
 import NavBar from './components/NavBar.jsx';
 import SetupScreen from './components/SetupScreen.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -12,9 +13,11 @@ import Charts from './pages/Charts.jsx';
 
 export default function App() {
   const { playerId, isReady, setupPlayer, linkDevice } = usePlayerIdentity();
+  const authReady = useAuthReady();
 
-  // Wait for localStorage check to finish (avoids flash of setup screen)
-  if (!isReady) return null;
+  // Wait for the localStorage check and the anonymous auth session (required by
+  // the Firestore rules) before rendering anything that reads/writes Firestore.
+  if (!isReady || !authReady) return null;
 
   // First visit — show full-screen setup before anything else
   if (!playerId) {
