@@ -60,9 +60,16 @@ export default function PreSeasonPickSheet() {
     }
   }, [loadingBracket, savedBracketPicks]);
 
-  // Locked if: hardcoded deadline passed, admin manually locked it, or player submitted
-  const systemLocked    = isLocked('preseason') || (config?.locked ?? false);
-  const submittedLocked = savedPicks?.locked === true;
+  // Admin override lives in season/2026.preseasonLock:
+  //   'open'   → picking is open for both players, deadline ignored
+  //   'locked' → picking is shut for both players right now
+  //   'auto'/absent → follow the hard-coded deadline below
+  const adminLock       = config?.preseasonLock ?? (config?.locked ? 'locked' : 'auto');
+  const forceOpen       = adminLock === 'open';
+  const systemLocked    = !forceOpen && (adminLock === 'locked' || isLocked('preseason'));
+  // A player's own "Submit & Lock" — reversible, and ignored while admin holds it open.
+  const submittedLocked = !forceOpen && savedPicks?.locked === true;
+  const selfLockedOnly  = submittedLocked && !systemLocked;
   const locked          = systemLocked || submittedLocked;
 
   const pickedCount = Object.keys(localPicks).length;
@@ -129,7 +136,31 @@ export default function PreSeasonPickSheet() {
       <div className="preseason-layout">
         {/* ── Left: pick sheet accordion ── */}
         <div>
-          {locked && <LockBanner type="preseason" />}
+          {systemLocked && (
+            <LockBanner
+              type="preseason"
+              message={
+                adminLock === 'locked'
+                  ? 'Pre-season picks are locked by the admin.'
+                  : 'Pre-season picks are locked — the deadline has passed.'
+              }
+            />
+          )}
+
+          {selfLockedOnly && (
+            <div className="picksheet-toolbar">
+              <span className="picksheet-autosave picksheet-autosave--ok">
+                Your picks are locked in.
+              </span>
+              <button
+                className="btn btn--ghost btn--sm"
+                onClick={() => savePicks({ locked: false })}
+                disabled={saveStatus === 'saving'}
+              >
+                Unlock my picks
+              </button>
+            </div>
+          )}
 
           {!locked && (
             <div className="picksheet-toolbar">

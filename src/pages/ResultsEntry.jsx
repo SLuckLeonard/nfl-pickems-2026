@@ -4,6 +4,7 @@ import { db } from '../firebase/config.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { TEAMS } from '../data/teams.js';
 import { useResults, useSeasonConfig } from '../hooks/useFirestore.js';
+import { isLocked, PRESEASON_LOCK } from '../data/weekLocks.js';
 import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
 import WeekNav from '../components/WeekNav.jsx';
@@ -107,9 +108,8 @@ export default function ResultsEntry() {
     }
   }
 
-  async function togglePreseasonLock() {
-    const current = config?.locked ?? false;
-    await setDoc(doc(db, 'season', '2026'), { locked: !current }, { merge: true });
+  async function setPreseasonLock(value) {
+    await setDoc(doc(db, 'season', '2026'), { preseasonLock: value }, { merge: true });
   }
 
   async function toggleBracketLock() {
@@ -154,6 +154,12 @@ export default function ResultsEntry() {
 
   const weekGames     = SCHEDULE.filter(g => g.week === week);
   const weekResultsCount = weekGames.filter(g => localResults[g.gameId]).length;
+
+  const preseasonMode = config?.preseasonLock ?? (config?.locked ? 'locked' : 'auto');
+  const preseasonDeadlinePassed = isLocked('preseason');
+  const preseasonDeadlineStr = new Date(PRESEASON_LOCK).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -283,14 +289,26 @@ export default function ResultsEntry() {
           <div className="admin-group">
             <h3>Lock Controls</h3>
 
-            <div className="lock-toggle-row">
+            <div className="lock-toggle-row lock-toggle-row--stack">
               <span>Pre-Season Picks</span>
-              <button
-                className={`btn btn--sm ${config?.locked ? 'btn--danger' : 'btn--ghost'}`}
-                onClick={togglePreseasonLock}
-              >
-                {config?.locked ? 'LOCKED — click to unlock' : 'OPEN — click to lock'}
-              </button>
+              <div className="lock-mode">
+                {[['auto', 'Auto'], ['open', 'Open'], ['locked', 'Locked']].map(([v, label]) => (
+                  <button
+                    key={v}
+                    className={`btn btn--sm ${preseasonMode === v ? 'btn--primary' : 'btn--ghost'}`}
+                    onClick={() => setPreseasonLock(v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="lock-hint text-muted">
+                {preseasonMode === 'auto'
+                  ? `Auto — follows the ${preseasonDeadlineStr} deadline${preseasonDeadlinePassed ? '; now passed, so picks are LOCKED' : ''}.`
+                  : preseasonMode === 'open'
+                    ? 'Open — both players can edit picks anytime; deadline and individual "Submit & Lock" are ignored.'
+                    : 'Locked — picking is shut for both players right now.'}
+              </p>
             </div>
 
             <div className="lock-grid">
