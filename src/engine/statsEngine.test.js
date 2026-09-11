@@ -25,7 +25,8 @@ const P1 = 'player1';
 const P2 = 'player2';
 
 // 3 games across 2 weeks.
-// W1: KC (AFC West) home vs DEN away → DEN wins (away = upset)
+// W1: KC (AFC West) home vs DEN away → DEN wins (DEN is the O/U underdog — see
+//     OU_LINES below — so this is the one upset)
 //     SEA (NFC West) home vs NE away → SEA wins (home wins)
 // W2: BUF (AFC East) home vs MIA away → BUF wins (no picks yet from P2 for week 2)
 const SCHEDULE = [
@@ -41,6 +42,12 @@ const RESULTS = {
     '2026_W2_BUF_MIA': 'BUF',  // home wins
   },
 };
+
+// Pre-season O/U win totals. KC(11) > DEN(5) so DEN is the underdog — DEN
+// winning is the one upset. SEA(9) == NE(9) is a toss-up. BUF(10) > MIA(6)
+// and the favorite (BUF) won, so neither of those is an upset — this
+// reproduces the same single-upset shape the old away-team-wins rule gave.
+const OU_LINES = { KC: 11, DEN: 5, SEA: 9, NE: 9, BUF: 10, MIA: 6 };
 
 // P1 weekly: 2/2 in W1 (both correct), 1/1 in W2
 // P2 weekly: 1/2 in W1 (missed KC_DEN), 0 picks in W2
@@ -225,8 +232,8 @@ describe('divisionAccuracy', () => {
 // ── upsetGames & upsetPickAccuracy ─────────────────────────────────────────
 
 describe('upsetGames', () => {
-  it('finds games where away team won', () => {
-    const upsets = upsetGames(RESULTS, SCHEDULE);
+  it('finds games where the lower-O/U team won', () => {
+    const upsets = upsetGames(RESULTS, SCHEDULE, OU_LINES);
     expect(upsets).toHaveLength(1);
     expect(upsets[0].gameId).toBe('2026_W1_KC_DEN');
     expect(upsets[0].winner).toBe('DEN');
@@ -234,19 +241,41 @@ describe('upsetGames', () => {
   });
 
   it('returns empty array when no results', () => {
-    expect(upsetGames({ games: {} }, SCHEDULE)).toHaveLength(0);
+    expect(upsetGames({ games: {} }, SCHEDULE, OU_LINES)).toHaveLength(0);
+  });
+
+  it('treats equal O/U lines as a toss-up, never an upset', () => {
+    const lines = { ...OU_LINES, NE: OU_LINES.SEA }; // tie SEA/NE
+    const upsets = upsetGames(RESULTS, SCHEDULE, lines);
+    expect(upsets.map(u => u.gameId)).not.toContain('2026_W1_SEA_NE');
+  });
+
+  it('does not flag a favorite win as an upset regardless of home/away', () => {
+    // BUF (home) is favored over MIA and BUF won — not an upset.
+    const upsets = upsetGames(RESULTS, SCHEDULE, OU_LINES);
+    expect(upsets.map(u => u.gameId)).not.toContain('2026_W2_BUF_MIA');
+  });
+
+  it('excludes a game missing an O/U line for either team', () => {
+    const linesMissingDen = { ...OU_LINES };
+    delete linesMissingDen.DEN;
+    expect(upsetGames(RESULTS, SCHEDULE, linesMissingDen)).toHaveLength(0);
+  });
+
+  it('defaults to no O/U lines and classifies nothing as an upset', () => {
+    expect(upsetGames(RESULTS, SCHEDULE)).toHaveLength(0);
   });
 });
 
 describe('upsetPickAccuracy', () => {
   it('checks if players called the upset', () => {
-    const p1 = upsetPickAccuracy(PICKS, RESULTS, P1, SCHEDULE);
+    const p1 = upsetPickAccuracy(PICKS, RESULTS, P1, SCHEDULE, OU_LINES);
     // P1 weekly picked DEN (correct upset call)
     expect(p1.weekly).toEqual({ correct: 1, total: 1, pct: 1 });
     // P1 preseason picked KC (missed the upset)
     expect(p1.preseason).toEqual({ correct: 0, total: 1, pct: 0 });
 
-    const p2 = upsetPickAccuracy(PICKS, RESULTS, P2, SCHEDULE);
+    const p2 = upsetPickAccuracy(PICKS, RESULTS, P2, SCHEDULE, OU_LINES);
     // P2 weekly picked KC (missed the upset)
     expect(p2.weekly).toEqual({ correct: 0, total: 1, pct: 0 });
     // P2 preseason picked DEN (correct upset call)

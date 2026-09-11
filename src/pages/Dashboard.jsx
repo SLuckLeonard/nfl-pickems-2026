@@ -310,7 +310,7 @@ export default function Dashboard() {
   }, [results, ouLines, p1Predicted, p2Predicted]);
 
   // ── 4g: Upset tracker ────────────────────────────────────────────────────
-  const upsets = useMemo(() => upsetGames(results, SCHEDULE), [results]);
+  const upsets = useMemo(() => upsetGames(results, SCHEDULE, ouLines), [results, ouLines]);
 
   const upsetRows = useMemo(() => {
     const p1WeeklyMap = {}, p2WeeklyMap = {}, p1PreMap = {}, p2PreMap = {};
@@ -659,9 +659,12 @@ export default function Dashboard() {
       <section className="dash-section">
         <h2>Upset Tracker</h2>
         <p className="text-muted dash-section__note">
-          Upset = away team wins. {upsetRows.length} upset{upsetRows.length !== 1 ? 's' : ''} so far this season.
+          Upset = the team with the lower pre-season O/U win total wins the game. Equal O/U
+          lines are a toss-up, not an upset. {upsetRows.length} upset{upsetRows.length !== 1 ? 's' : ''} so far this season.
         </p>
-        {upsetRows.length === 0 ? (
+        {!Object.keys(ouLines).length ? (
+          <p className="placeholder-note">Set O/U lines on the Results screen to start tracking upsets.</p>
+        ) : upsetRows.length === 0 ? (
           <p className="placeholder-note">No upsets recorded yet.</p>
         ) : (
           <div className="dash-table-wrap">

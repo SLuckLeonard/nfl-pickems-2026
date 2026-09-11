@@ -13,9 +13,6 @@
 
 import { TEAMS } from '../data/teams.js';
 
-// TODO: Replace away-team-wins upset definition with record-based definition after Week 4.
-// See NFL_PICKEMS_MASTER_SPEC.md for full details.
-
 // ── Private helpers ────────────────────────────────────────────────────────
 
 function getPicksDoc(allPicks, playerId, docType) {
@@ -286,18 +283,26 @@ export function divisionAccuracy(picks, results, playerId, div, schedule, pickTy
 }
 
 /**
- * All games where the away team won (current upset definition).
- * TODO: Replace away-team-wins definition with record-based definition after Week 4.
- * @param {Object}   results
- * @param {Object[]} schedule
+ * All decided games where the team with the LOWER pre-season O/U win total won.
+ * A game where both teams share the same O/U line is a toss-up, not an upset.
+ * A game missing an O/U line for either team can't be classified and is excluded.
+ * @param {Object}                results
+ * @param {Object[]}              schedule
+ * @param {{ [teamId]: number }}  ouLines  pre-season O/U win totals per team
  * @returns {Array<{ gameId: string, week: number, winner: string, game: Object }>}
  */
-export function upsetGames(results, schedule) {
+export function upsetGames(results, schedule, ouLines = {}) {
   const gameMap = new Map(schedule.map(g => [g.gameId, g]));
   return Object.entries(results?.games ?? {})
     .filter(([gameId, winner]) => {
       const game = gameMap.get(gameId);
-      return game && winner === game.awayTeam;
+      if (!game) return false;
+      const homeLine = ouLines[game.homeTeam];
+      const awayLine = ouLines[game.awayTeam];
+      if (homeLine == null || awayLine == null) return false; // can't classify without both lines
+      if (homeLine === awayLine) return false;                // toss-up — never an upset
+      const underdog = homeLine < awayLine ? game.homeTeam : game.awayTeam;
+      return winner === underdog;
     })
     .map(([gameId, winner]) => ({
       gameId,
@@ -309,14 +314,15 @@ export function upsetGames(results, schedule) {
 
 /**
  * How accurately a player called upsets, broken down by pick type.
- * @param {Object[]} picks
- * @param {Object}   results
- * @param {string}   playerId
- * @param {Object[]} schedule
+ * @param {Object[]}              picks
+ * @param {Object}                results
+ * @param {string}                playerId
+ * @param {Object[]}              schedule
+ * @param {{ [teamId]: number }}  ouLines  pre-season O/U win totals per team
  * @returns {{ weekly: { correct, total, pct }, preseason: { correct, total, pct } }}
  */
-export function upsetPickAccuracy(picks, results, playerId, schedule) {
-  const upsets = upsetGames(results, schedule);
+export function upsetPickAccuracy(picks, results, playerId, schedule, ouLines = {}) {
+  const upsets = upsetGames(results, schedule, ouLines);
   if (upsets.length === 0) {
     const empty = { correct: 0, total: 0, pct: null };
     return { weekly: empty, preseason: empty };

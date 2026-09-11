@@ -235,13 +235,12 @@ Each device gets its own anonymous identity by default. To use the same account 
 ## Known Limitations & Planned Improvements
 
 **Current limitations:**
-- Upset definition uses "away team wins" as a proxy. After Week 4, this should be updated to use team win/loss records. See `TODO` comment in `src/engine/statsEngine.js`.
+- Upset definition compares pre-season O/U win totals: the team with the lower line winning is an upset, equal lines are a toss-up. Games are excluded until both teams have an O/U line set.
 - Firestore security rules only require an anonymous sign-in (any visitor can obtain one). Fine for a private two-player app; tighten to owner-scoped rules for any public deployment.
 - Tiebreaker logic for playoff seeding uses a simplified model. Full NFL tiebreaker rules (strength of victory, strength of schedule, etc.) are not implemented. See `TODO` in `src/engine/bracketEngine.js`.
 
 **Planned improvements:**
 - Live score integration via a real-time sports API to auto-populate results without manual entry
-- Record-based upset definition replacing the away-team proxy after sufficient game data accumulates
 - Full NFL tiebreaker implementation for more accurate playoff seeding
 
 ---
