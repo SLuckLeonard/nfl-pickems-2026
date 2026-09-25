@@ -5,6 +5,7 @@ import { SCHEDULE } from '../data/schedule2026.js';
 import { isLocked } from '../data/weekLocks.js';
 import { usePlayerPicks, useResults, useSeasonConfig, usePlayers } from '../hooks/useFirestore.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
+import { useActiveWeek } from '../hooks/useActiveWeek.js';
 import GameCard from '../components/GameCard.jsx';
 import LockBanner from '../components/LockBanner.jsx';
 import StandingsPanel from '../components/StandingsPanel.jsx';
@@ -35,6 +36,8 @@ export default function PreSeasonPickSheet() {
   const { picks: savedBracketPicks, loading: loadingBracket } = usePlayerPicks(playerId, 'bracket');
   const { picks: otherSavedBracketPicks } = usePlayerPicks(otherPlayer?.playerId ?? null, 'bracket');
 
+  const activeWeek = useActiveWeek(results);
+
   const [localPicks,        setLocalPicks]        = useState({});
   const [localBracketPicks, setLocalBracketPicks] = useState({});
   const [openWeeks,         setOpenWeeks]         = useState(() => new Set([1]));
@@ -42,6 +45,16 @@ export default function PreSeasonPickSheet() {
   const [rightTab,          setRightTab]          = useState('standings'); // 'standings'|'bracket'
   const initialized        = useRef(false);
   const bracketInitialized = useRef(false);
+  const activeWeekOpened   = useRef(false);
+
+  // Auto-expand whichever week isn't fully decided yet, once (so it doesn't
+  // fight a player who's manually opened/closed sections since).
+  useEffect(() => {
+    if (!activeWeekOpened.current && results) {
+      activeWeekOpened.current = true;
+      setOpenWeeks(new Set([activeWeek]));
+    }
+  }, [results, activeWeek]);
 
   // Initialize from Firestore exactly once. Require savedPicks to be truthy so the
   // flag isn't set on the null-playerId pass-through (where loading=false but
