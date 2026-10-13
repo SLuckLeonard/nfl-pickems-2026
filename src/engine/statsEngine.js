@@ -518,6 +518,27 @@ export function bestAndWorstWeek(picks, results, playerId, pickType) {
 }
 
 /**
+ * Remove the given weeks' games from a results doc, so weekly-pick stats can
+ * exclude a week (e.g. one neither player actually submitted picks for)
+ * without touching the underlying data. Pre-season accuracy, O/U pace, and
+ * decided/remaining counts should keep using the original, unfiltered results.
+ * @param {Object}                   results
+ * @param {Set<number>|number[]}     excludedWeeks
+ * @returns {Object} a results doc with those weeks' games removed
+ */
+export function withoutWeeks(results, excludedWeeks) {
+  const exclude = excludedWeeks instanceof Set ? excludedWeeks : new Set(excludedWeeks);
+  if (!exclude.size) return results;
+  const games = Object.fromEntries(
+    Object.entries(results?.games ?? {}).filter(([gameId]) => {
+      const w = weekFromGameId(gameId);
+      return w === null || !exclude.has(w);
+    })
+  );
+  return { ...results, games };
+}
+
+/**
  * Total number of games that have a result entered.
  * @param {Object} results
  * @returns {number}

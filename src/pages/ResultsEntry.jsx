@@ -7,7 +7,7 @@ import { useResults, useSeasonConfig } from '../hooks/useFirestore.js';
 import { TIE } from '../engine/statsEngine.js';
 import { isLocked, PRESEASON_LOCK } from '../data/weekLocks.js';
 import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
-import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
+import { useIsAdmin } from '../hooks/useIsAdmin.js';
 import WeekNav from '../components/WeekNav.jsx';
 import TeamLogo from '../components/TeamLogo.jsx';
 
@@ -23,19 +23,9 @@ const DIVISIONS = [
   { conf: 'NFC', div: 'West',  teams: ['ARI', 'LAR', 'SF',  'SEA'] },
 ];
 
-// Admin match: any UID in VITE_ADMIN_PLAYER_ID (comma-separated ok), or a
-// case-insensitive name match on VITE_ADMIN_NAME. The name fallback survives a
-// season reset, where the anonymous auth UID can rotate.
-const ADMIN_IDS = (import.meta.env.VITE_ADMIN_PLAYER_ID ?? '')
-  .split(',').map(s => s.trim()).filter(Boolean);
-const ADMIN_NAME = (import.meta.env.VITE_ADMIN_NAME ?? '').trim().toLowerCase();
-
 export default function ResultsEntry() {
-  const { playerId, playerName } = usePlayerIdentity();
-  const isAdmin =
-    (!!playerId && ADMIN_IDS.includes(playerId)) ||
-    (!!ADMIN_NAME && (playerName ?? '').trim().toLowerCase() === ADMIN_NAME);
-  const currentWeek              = useCurrentWeek();
+  const isAdmin                   = useIsAdmin();
+  const currentWeek               = useCurrentWeek();
   const { results, loading: resultsLoading } = useResults();
   const { config,  loading: configLoading  } = useSeasonConfig();
 

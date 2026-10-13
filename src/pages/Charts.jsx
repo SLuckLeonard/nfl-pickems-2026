@@ -14,6 +14,7 @@ import {
   ouPace,
   ouTrendingAccuracy,
   preseasonWeekAccuracy,
+  withoutWeeks,
 } from '../engine/statsEngine.js';
 import '../styles/charts.css';
 
@@ -121,6 +122,15 @@ export default function Charts() {
   const ouLines = config?.ouLines ?? {};
   const hasLines = Object.keys(ouLines).length > 0;
 
+  // Weeks the admin has omitted from weekly-pick stats (e.g. a week neither
+  // player actually submitted picks for). Pre-season accuracy, O/U charts,
+  // and the week axis itself are unaffected — only weekly-pick scoring skips them.
+  const omittedWeeks = useMemo(() => new Set(config?.omittedWeeks ?? []), [config]);
+  const weeklyResults = useMemo(
+    () => withoutWeeks(results, omittedWeeks),
+    [results, omittedWeeks]
+  );
+
   // Weeks that have at least one result entered, ascending
   const weeksWithResults = useMemo(() => {
     const weeks = new Set();
@@ -136,8 +146,8 @@ export default function Charts() {
   // ── Charts 1 & 2: per-week accuracy (weekly + preseason) ─────────────────
   const weeklyData = useMemo(() => {
     return weeksWithResults.map(week => {
-      const p1w  = p1 ? weeklyAccuracy(picks, results, p1.playerId, week)     : { pct: null };
-      const p2w  = p2 ? weeklyAccuracy(picks, results, p2.playerId, week)     : { pct: null };
+      const p1w  = p1 ? weeklyAccuracy(picks, weeklyResults, p1.playerId, week)     : { pct: null };
+      const p2w  = p2 ? weeklyAccuracy(picks, weeklyResults, p2.playerId, week)     : { pct: null };
       const p1pr = p1 ? preseasonWeekAccuracy(picks, results, p1.playerId, week) : { pct: null };
       const p2pr = p2 ? preseasonWeekAccuracy(picks, results, p2.playerId, week) : { pct: null };
       return {
@@ -148,14 +158,14 @@ export default function Charts() {
         p2Pre:    toPct(p2pr.pct),
       };
     });
-  }, [weeksWithResults, picks, results, p1, p2]);
+  }, [weeksWithResults, picks, results, weeklyResults, p1, p2]);
 
   // ── Chart 3: cumulative weekly accuracy ──────────────────────────────────
   const cumulativeData = useMemo(() => {
     let p1c = 0, p1t = 0, p2c = 0, p2t = 0;
     return weeksWithResults.map(week => {
-      const p1w = p1 ? weeklyAccuracy(picks, results, p1.playerId, week) : { correct: 0, total: 0 };
-      const p2w = p2 ? weeklyAccuracy(picks, results, p2.playerId, week) : { correct: 0, total: 0 };
+      const p1w = p1 ? weeklyAccuracy(picks, weeklyResults, p1.playerId, week) : { correct: 0, total: 0 };
+      const p2w = p2 ? weeklyAccuracy(picks, weeklyResults, p2.playerId, week) : { correct: 0, total: 0 };
       p1c += p1w.correct; p1t += p1w.total;
       p2c += p2w.correct; p2t += p2w.total;
       return {
@@ -164,18 +174,18 @@ export default function Charts() {
         p2: p2t > 0 ? toPct(p2c / p2t) : null,
       };
     });
-  }, [weeksWithResults, picks, results, p1, p2]);
+  }, [weeksWithResults, picks, weeklyResults, p1, p2]);
 
   // ── Chart 4: division accuracy ────────────────────────────────────────────
   const divData = useMemo(() => {
     return DIV_ORDER.map(div => ({
       div:  DIV_ABBR[div],
-      p1w:  p1 ? toPct(divisionAccuracy(picks, results, p1.playerId, div, SCHEDULE, 'weekly').pct)    : null,
-      p2w:  p2 ? toPct(divisionAccuracy(picks, results, p2.playerId, div, SCHEDULE, 'weekly').pct)    : null,
+      p1w:  p1 ? toPct(divisionAccuracy(picks, weeklyResults, p1.playerId, div, SCHEDULE, 'weekly').pct)    : null,
+      p2w:  p2 ? toPct(divisionAccuracy(picks, weeklyResults, p2.playerId, div, SCHEDULE, 'weekly').pct)    : null,
       p1p:  p1 ? toPct(divisionAccuracy(picks, results, p1.playerId, div, SCHEDULE, 'preseason').pct) : null,
       p2p:  p2 ? toPct(divisionAccuracy(picks, results, p2.playerId, div, SCHEDULE, 'preseason').pct) : null,
     }));
-  }, [picks, results, p1, p2]);
+  }, [picks, results, weeklyResults, p1, p2]);
 
   // ── Charts 5 & 5b: O/U hit rate bars + per-team status chips ─────────────
   const [ouBarData, ouTeamChips] = useMemo(() => {

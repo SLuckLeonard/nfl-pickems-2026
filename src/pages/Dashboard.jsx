@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase/config.js';
 import { useResults, useAllPicks, useSeasonConfig, usePlayers } from '../hooks/useFirestore.js';
 import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
+import { useIsAdmin } from '../hooks/useIsAdmin.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { TEAMS } from '../data/teams.js';
 import StatCard from '../components/StatCard.jsx';
@@ -21,6 +24,7 @@ import {
   ouTrendingAccuracy,
   bestAndWorstWeek,
   preseasonWeekAccuracy,
+  withoutWeeks,
   gamesDecided,
   gamesRemaining,
 } from '../engine/statsEngine.js';
@@ -159,10 +163,26 @@ export default function Dashboard() {
   const { config,  loading: cLoading } = useSeasonConfig();
   const { players, loading: plLoading } = usePlayers();
   const currentWeek = useCurrentWeek();
+  const isAdmin = useIsAdmin();
 
   const [weekSort, setWeekSort] = useState({ col: 'week', dir: 'asc' });
 
   const loading = rLoading || pLoading || cLoading || plLoading;
+
+  // Weeks the admin has omitted from weekly-pick stats (e.g. a week neither
+  // player actually submitted picks for). Pre-season accuracy, O/U pace, and
+  // games-decided counts are unaffected — only weekly-pick scoring skips them.
+  const omittedWeeks = useMemo(() => new Set(config?.omittedWeeks ?? []), [config]);
+  const weeklyResults = useMemo(
+    () => withoutWeeks(results, omittedWeeks),
+    [results, omittedWeeks]
+  );
+
+  async function toggleOmitWeek(w) {
+    const current = config?.omittedWeeks ?? [];
+    const next = current.includes(w) ? current.filter(x => x !== w) : [...current, w];
+    await setDoc(doc(db, 'season', '2026'), { omittedWeeks: next }, { merge: true });
+  }
 
   // Consistent p1/p2 ordering by registration time
   const [p1, p2] = useMemo(() => {
@@ -176,19 +196,19 @@ export default function Dashboard() {
 
   const ouLines = config?.ouLines ?? {};
 
-  // ── 4a: H2H ───────────────────────────────────────────────────────────────
+  // ── 4a: H2H (weekly picks only — omitted weeks drop out entirely) ────────
   const h2hRecord = useMemo(
-    () => p1 && p2 ? headToHeadRecord(picks, results, p1.playerId, p2.playerId) : null,
-    [picks, results, p1, p2]
+    () => p1 && p2 ? headToHeadRecord(picks, weeklyResults, p1.playerId, p2.playerId) : null,
+    [picks, weeklyResults, p1, p2]
   );
   const h2hWeekly = useMemo(
-    () => p1 && p2 ? headToHeadWeekly(picks, results, p1.playerId, p2.playerId) : [],
-    [picks, results, p1, p2]
+    () => p1 && p2 ? headToHeadWeekly(picks, weeklyResults, p1.playerId, p2.playerId) : [],
+    [picks, weeklyResults, p1, p2]
   );
 
   // ── 4b: Overall accuracy & stat cards ────────────────────────────────────
-  const p1WeeklyAcc = useMemo(() => p1 ? overallAccuracy(picks, results, p1.playerId, 'weekly')   : null, [picks, results, p1]);
-  const p2WeeklyAcc = useMemo(() => p2 ? overallAccuracy(picks, results, p2.playerId, 'weekly')   : null, [picks, results, p2]);
+  const p1WeeklyAcc = useMemo(() => p1 ? overallAccuracy(picks, weeklyResults, p1.playerId, 'weekly')   : null, [picks, weeklyResults, p1]);
+  const p2WeeklyAcc = useMemo(() => p2 ? overallAccuracy(picks, weeklyResults, p2.playerId, 'weekly')   : null, [picks, weeklyResults, p2]);
   const p1PreAcc    = useMemo(() => p1 ? overallAccuracy(picks, results, p1.playerId, 'preseason') : null, [picks, results, p1]);
   const p2PreAcc    = useMemo(() => p2 ? overallAccuracy(picks, results, p2.playerId, 'preseason') : null, [picks, results, p2]);
 
@@ -205,25 +225,25 @@ export default function Dashboard() {
   const remaining = useMemo(() => gamesRemaining(results, SCHEDULE), [results]);
 
   // Streaks for player cards
-  const p1Streak = useMemo(() => p1 ? currentStreak(picks, results, p1.playerId, 'weekly') : null, [picks, results, p1]);
-  const p2Streak = useMemo(() => p2 ? currentStreak(picks, results, p2.playerId, 'weekly') : null, [picks, results, p2]);
+  const p1Streak = useMemo(() => p1 ? currentStreak(picks, weeklyResults, p1.playerId, 'weekly') : null, [picks, weeklyResults, p1]);
+  const p2Streak = useMemo(() => p2 ? currentStreak(picks, weeklyResults, p2.playerId, 'weekly') : null, [picks, weeklyResults, p2]);
 
   // ── 4d: Rolling stats ─────────────────────────────────────────────────────
-  const p1Rolling   = useMemo(() => p1 ? rollingAccuracy(picks, results, p1.playerId, currentWeek) : null, [picks, results, p1, currentWeek]);
-  const p2Rolling   = useMemo(() => p2 ? rollingAccuracy(picks, results, p2.playerId, currentWeek) : null, [picks, results, p2, currentWeek]);
-  const p1BestWorst = useMemo(() => p1 ? bestAndWorstWeek(picks, results, p1.playerId, 'weekly') : null, [picks, results, p1]);
-  const p2BestWorst = useMemo(() => p2 ? bestAndWorstWeek(picks, results, p2.playerId, 'weekly') : null, [picks, results, p2]);
-  const p1LongestOk  = useMemo(() => p1 ? longestStreakOf(picks, results, p1.playerId, 'correct')   : 0, [picks, results, p1]);
-  const p2LongestOk  = useMemo(() => p2 ? longestStreakOf(picks, results, p2.playerId, 'correct')   : 0, [picks, results, p2]);
-  const p1LongestErr = useMemo(() => p1 ? longestStreakOf(picks, results, p1.playerId, 'incorrect') : 0, [picks, results, p1]);
-  const p2LongestErr = useMemo(() => p2 ? longestStreakOf(picks, results, p2.playerId, 'incorrect') : 0, [picks, results, p2]);
+  const p1Rolling   = useMemo(() => p1 ? rollingAccuracy(picks, weeklyResults, p1.playerId, currentWeek) : null, [picks, weeklyResults, p1, currentWeek]);
+  const p2Rolling   = useMemo(() => p2 ? rollingAccuracy(picks, weeklyResults, p2.playerId, currentWeek) : null, [picks, weeklyResults, p2, currentWeek]);
+  const p1BestWorst = useMemo(() => p1 ? bestAndWorstWeek(picks, weeklyResults, p1.playerId, 'weekly') : null, [picks, weeklyResults, p1]);
+  const p2BestWorst = useMemo(() => p2 ? bestAndWorstWeek(picks, weeklyResults, p2.playerId, 'weekly') : null, [picks, weeklyResults, p2]);
+  const p1LongestOk  = useMemo(() => p1 ? longestStreakOf(picks, weeklyResults, p1.playerId, 'correct')   : 0, [picks, weeklyResults, p1]);
+  const p2LongestOk  = useMemo(() => p2 ? longestStreakOf(picks, weeklyResults, p2.playerId, 'correct')   : 0, [picks, weeklyResults, p2]);
+  const p1LongestErr = useMemo(() => p1 ? longestStreakOf(picks, weeklyResults, p1.playerId, 'incorrect') : 0, [picks, weeklyResults, p1]);
+  const p2LongestErr = useMemo(() => p2 ? longestStreakOf(picks, weeklyResults, p2.playerId, 'incorrect') : 0, [picks, weeklyResults, p2]);
 
   // ── 4c: Weekly accuracy table ─────────────────────────────────────────────
   const weeklyRows = useMemo(() => {
     return Array.from({ length: WEEK_COUNT }, (_, i) => {
       const week  = i + 1;
-      const p1w   = p1 ? weeklyAccuracy(picks, results, p1.playerId, week) : { correct: 0, total: 0, pct: null };
-      const p2w   = p2 ? weeklyAccuracy(picks, results, p2.playerId, week) : { correct: 0, total: 0, pct: null };
+      const p1w   = p1 ? weeklyAccuracy(picks, weeklyResults, p1.playerId, week) : { correct: 0, total: 0, pct: null };
+      const p2w   = p2 ? weeklyAccuracy(picks, weeklyResults, p2.playerId, week) : { correct: 0, total: 0, pct: null };
       const p1pre = p1 ? preseasonWeekAccuracy(picks, results, p1.playerId, week) : { correct: 0, total: 0, pct: null };
       const p2pre = p2 ? preseasonWeekAccuracy(picks, results, p2.playerId, week) : { correct: 0, total: 0, pct: null };
 
@@ -245,7 +265,7 @@ export default function Dashboard() {
         weekWinner,
       };
     });
-  }, [picks, results, p1, p2]);
+  }, [picks, results, weeklyResults, p1, p2]);
 
   const sortedWeeklyRows = useMemo(() => {
     const { col, dir } = weekSort;
@@ -261,12 +281,12 @@ export default function Dashboard() {
   const divRows = useMemo(() => {
     return DIVISION_ORDER.map(div => ({
       div,
-      p1w: p1 ? divisionAccuracy(picks, results, p1.playerId, div, SCHEDULE, 'weekly')    : null,
-      p2w: p2 ? divisionAccuracy(picks, results, p2.playerId, div, SCHEDULE, 'weekly')    : null,
+      p1w: p1 ? divisionAccuracy(picks, weeklyResults, p1.playerId, div, SCHEDULE, 'weekly')    : null,
+      p2w: p2 ? divisionAccuracy(picks, weeklyResults, p2.playerId, div, SCHEDULE, 'weekly')    : null,
       p1p: p1 ? divisionAccuracy(picks, results, p1.playerId, div, SCHEDULE, 'preseason') : null,
       p2p: p2 ? divisionAccuracy(picks, results, p2.playerId, div, SCHEDULE, 'preseason') : null,
     }));
-  }, [picks, results, p1, p2]);
+  }, [picks, results, weeklyResults, p1, p2]);
 
   // ── 4f: O/U tracker ──────────────────────────────────────────────────────
   const p1Predicted = useMemo(() => p1 ? predictedWinsFromPicks(picks, p1.playerId, SCHEDULE) : {}, [picks, p1]);
@@ -315,8 +335,9 @@ export default function Dashboard() {
       p1Pre:    p1PreMap[gameId],
       p2Weekly: p2WeeklyMap[gameId],
       p2Pre:    p2PreMap[gameId],
+      weekOmitted: omittedWeeks.has(week),
     }));
-  }, [upsets, picks, p1, p2]);
+  }, [upsets, picks, p1, p2, omittedWeeks]);
 
   // ── Render helpers ────────────────────────────────────────────────────────
 
@@ -330,7 +351,10 @@ export default function Dashboard() {
 
   // No pick = implicit tie guess, which never matches a real upset winner —
   // so an unpicked upset game shows as a miss (✗), same as a wrong pick.
-  function upsetCell(picked, winner) {
+  // `omitted` (weekly column only, for a week the admin excluded) overrides
+  // that with a neutral dash, same as "didn't participate that week."
+  function upsetCell(picked, winner, omitted = false) {
+    if (omitted) return { cls: 'cell--muted', label: '—' };
     return (picked ?? TIE) === winner
       ? { cls: 'cell--success', label: '✓' }
       : { cls: 'cell--error',   label: '✗' };
@@ -452,6 +476,39 @@ export default function Dashboard() {
       {/* ── 4c: Weekly Accuracy Table ── */}
       <section className="dash-section">
         <h2>Weekly Accuracy</h2>
+
+        {omittedWeeks.size > 0 && (
+          <p className="text-muted dash-section__note">
+            Omitted from weekly-pick stats: {[...omittedWeeks].sort((a, b) => a - b).map(w => `Week ${w}`).join(', ')}.
+            Pre-season accuracy is unaffected.
+          </p>
+        )}
+
+        {isAdmin && (
+          <div className="omit-week-control">
+            <span className="omit-week-control__label">
+              Omit a week from weekly-pick stats (e.g. a week neither of you actually picked):
+            </span>
+            <div className="lock-grid">
+              {Array.from({ length: 18 }, (_, i) => i + 1).map(w => {
+                const omitted = omittedWeeks.has(w);
+                return (
+                  <div key={w} className="lock-week">
+                    <span className="lock-week__label">Wk {w}</span>
+                    <button
+                      className={`lock-week__btn ${omitted ? 'lock-week__btn--omitted' : 'lock-week__btn--open'}`}
+                      onClick={() => toggleOmitWeek(w)}
+                      title={`Week ${w}: click to ${omitted ? 'include' : 'omit'}`}
+                    >
+                      {omitted ? 'OMIT' : 'KEEP'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="dash-table-wrap">
           <table className="data-table">
             <thead>
@@ -662,9 +719,9 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {upsetRows.map(row => {
-                  const p1w = upsetCell(row.p1Weekly, row.winner);
+                  const p1w = upsetCell(row.p1Weekly, row.winner, row.weekOmitted);
                   const p1p = upsetCell(row.p1Pre,    row.winner);
-                  const p2w = upsetCell(row.p2Weekly, row.winner);
+                  const p2w = upsetCell(row.p2Weekly, row.winner, row.weekOmitted);
                   const p2p = upsetCell(row.p2Pre,    row.winner);
                   return (
                     <tr key={row.gameId}>

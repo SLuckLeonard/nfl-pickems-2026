@@ -17,6 +17,7 @@ import {
   ouTrendingAccuracy,
   bestAndWorstWeek,
   preseasonWeekAccuracy,
+  withoutWeeks,
   gamesDecided,
   gamesRemaining,
 } from './statsEngine.js';
@@ -445,6 +446,34 @@ describe('preseasonWeekAccuracy', () => {
   it('scores preseason picks against just one week of results', () => {
     expect(preseasonWeekAccuracy(PICKS, RESULTS, P1, 1)).toEqual({ correct: 1, total: 2, pct: 0.5 });
     expect(preseasonWeekAccuracy(PICKS, RESULTS, P1, 2)).toEqual({ correct: 1, total: 1, pct: 1 });
+  });
+});
+
+// ── withoutWeeks ───────────────────────────────────────────────────────────
+
+describe('withoutWeeks', () => {
+  it('drops only the given weeks\' games, leaving the rest intact', () => {
+    const filtered = withoutWeeks(RESULTS, [1]);
+    expect(filtered.games).toEqual({ '2026_W2_BUF_MIA': 'BUF' });
+  });
+
+  it('accepts a Set as well as an array', () => {
+    const filtered = withoutWeeks(RESULTS, new Set([2]));
+    expect(filtered.games).toEqual({
+      '2026_W1_KC_DEN': 'DEN',
+      '2026_W1_SEA_NE': 'SEA',
+    });
+  });
+
+  it('returns the same results object untouched when nothing is excluded', () => {
+    expect(withoutWeeks(RESULTS, [])).toBe(RESULTS);
+  });
+
+  it('feeds cleanly into weeklyAccuracy to exclude a week from scoring', () => {
+    const filtered = withoutWeeks(RESULTS, [2]);
+    // P2 has no week_2 doc — without the omission this would be 0/1 (a miss);
+    // omitting week 2 removes it from the picture entirely.
+    expect(weeklyAccuracy(PICKS, filtered, P2, 2)).toEqual({ correct: 0, total: 0, pct: null });
   });
 });
 
