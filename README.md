@@ -236,6 +236,7 @@ Each device gets its own anonymous identity by default. To use the same account 
 
 **Current limitations:**
 - Upset definition compares pre-season O/U win totals: the team with the lower line winning is an upset, equal lines are a toss-up. Games are excluded until both teams have an O/U line set.
+- Game results support **Tie** (admin-only, entered on the Results screen). There's no tie option on pre-season or weekly picks — a game a player didn't pick is scored as an implicit tie guess, correct only if that game actually ends in a tie.
 - Firestore security rules only require an anonymous sign-in (any visitor can obtain one). Fine for a private two-player app; tighten to owner-scoped rules for any public deployment.
 - Tiebreaker logic for playoff seeding uses a simplified model. Full NFL tiebreaker rules (strength of victory, strength of schedule, etc.) are not implemented. See `TODO` in `src/engine/bracketEngine.js`.
 

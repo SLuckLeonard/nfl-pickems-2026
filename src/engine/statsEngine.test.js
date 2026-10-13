@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  TIE,
   weeklyAccuracy,
   overallAccuracy,
   rollingAccuracy,
@@ -15,6 +16,7 @@ import {
   ouStatus,
   ouTrendingAccuracy,
   bestAndWorstWeek,
+  preseasonWeekAccuracy,
   gamesDecided,
   gamesRemaining,
 } from './statsEngine.js';
@@ -50,7 +52,8 @@ const RESULTS = {
 const OU_LINES = { KC: 11, DEN: 5, SEA: 9, NE: 9, BUF: 10, MIA: 6 };
 
 // P1 weekly: 2/2 in W1 (both correct), 1/1 in W2
-// P2 weekly: 1/2 in W1 (missed KC_DEN), 0 picks in W2
+// P2 weekly: 1/2 in W1 (missed KC_DEN), no week_2 doc at all — BUF_MIA counts
+//   as an implicit tie guess, which is wrong since it was a decisive BUF win
 // P1 preseason: picked KC (wrong) + SEA (correct) + BUF (correct) → 2/3
 // P2 preseason: picked DEN (correct) + NE (wrong) + MIA (wrong) → 1/3
 const PICKS = [
@@ -99,8 +102,10 @@ describe('weeklyAccuracy', () => {
     expect(weeklyAccuracy(PICKS, RESULTS, P2, 1)).toEqual({ correct: 1, total: 2, pct: 0.5 });
   });
 
-  it('returns null pct when no picks document exists', () => {
-    expect(weeklyAccuracy(PICKS, RESULTS, P2, 2)).toEqual({ correct: 0, total: 0, pct: null });
+  it('treats a missing picks document as an implicit tie guess on every decided game', () => {
+    // P2 has no week_2 doc at all; BUF_MIA is decided (BUF won) so it still
+    // counts — the missing pick defaults to TIE, which doesn't match BUF.
+    expect(weeklyAccuracy(PICKS, RESULTS, P2, 2)).toEqual({ correct: 0, total: 1, pct: 0 });
   });
 
   it('returns null pct when no results exist for the week', () => {
@@ -115,8 +120,8 @@ describe('overallAccuracy', () => {
   it('aggregates weekly picks across all weeks', () => {
     // P1: 2/2 (W1) + 1/1 (W2) = 3/3
     expect(overallAccuracy(PICKS, RESULTS, P1, 'weekly')).toEqual({ correct: 3, total: 3, pct: 1 });
-    // P2: 1/2 (W1) + 0 picks W2 = 1/2
-    expect(overallAccuracy(PICKS, RESULTS, P2, 'weekly')).toEqual({ correct: 1, total: 2, pct: 0.5 });
+    // P2: 1/2 (W1) + 0/1 (W2, no doc — implicit tie guess misses the BUF win) = 1/3
+    expect(overallAccuracy(PICKS, RESULTS, P2, 'weekly')).toEqual({ correct: 1, total: 3, pct: 1 / 3 });
   });
 
   it('checks preseason picks against all results', () => {
@@ -132,8 +137,10 @@ describe('overallAccuracy', () => {
     expect(p2.total).toBe(3);
   });
 
-  it('returns null pct for missing player', () => {
-    expect(overallAccuracy(PICKS, RESULTS, 'nobody', 'preseason').pct).toBeNull();
+  it('scores an unknown player as missing every decided game (implicit tie guess)', () => {
+    // No pick doc at all → every one of the 3 decided games defaults to TIE,
+    // which matches none of them (no ties in this fixture).
+    expect(overallAccuracy(PICKS, RESULTS, 'nobody', 'preseason')).toEqual({ correct: 0, total: 3, pct: 0 });
   });
 });
 
@@ -161,11 +168,13 @@ describe('currentStreak', () => {
     expect(streak.count).toBe(3);
   });
 
-  it('reports streak starting from most recent game', () => {
-    // P2 weekly: W1 game 1 wrong, W1 game 2 correct (alphabetical: KC_DEN < SEA_NE)
-    // Last resolved game is SEA_NE (correct) — streak = 1 correct
+  it('treats a missing pick as a tie guess, which can break or start a streak', () => {
+    // Most recent resolved game is W2 BUF_MIA. P2 has no week_2 doc, so their
+    // implicit guess is TIE — wrong, since BUF won outright. That starts a
+    // fresh 1-game incorrect streak, even though their last *actual* pick
+    // (W1 SEA_NE) was correct.
     const streak = currentStreak(PICKS, RESULTS, P2, 'weekly');
-    expect(streak.type).toBe('correct');
+    expect(streak.type).toBe('incorrect');
     expect(streak.count).toBe(1);
   });
 
@@ -188,7 +197,8 @@ describe('headToHeadWeekly', () => {
     const h2h = headToHeadWeekly(PICKS, RESULTS, P1, P2);
     // W1: P1 100% vs P2 50% → P1 wins
     expect(h2h[0].winner).toBe(P1);
-    // W2: P1 100% vs P2 null (no picks) → P1 wins
+    // W2: P1 100% vs P2 0% (no pick defaults to a tie guess, which misses
+    // the decisive BUF win) → P1 wins
     expect(h2h[1].winner).toBe(P1);
   });
 });
@@ -226,6 +236,46 @@ describe('divisionAccuracy', () => {
     // P1 weekly picked DEN (correct)
     const afcWest = divisionAccuracy(PICKS, RESULTS, P1, 'AFC West', SCHEDULE, 'weekly');
     expect(afcWest).toEqual({ correct: 1, total: 1, pct: 1 });
+  });
+});
+
+// ── Tie handling ───────────────────────────────────────────────────────────
+// A game result can be TIE. Players never pick TIE themselves — a game they
+// didn't pick is scored as an implicit TIE guess (see countCorrect in
+// statsEngine.js): correct only if that game actually tied, wrong otherwise.
+
+describe('tie handling', () => {
+  // gameIds must carry a _W9_ marker — weeklyAccuracy filters results down to
+  // the requested week by parsing it out of the gameId (see weekFromGameId).
+  const tieResults = { games: { '2026_W9_A_B': TIE, '2026_W9_C_D': 'C' } }; // tg1 ties, tg2 is a decisive win
+
+  it('scores an unpicked tied game as correct, and an unpicked decisive game as wrong', () => {
+    const picks = [{ playerId: 'p', type: 'week_9', picks: {} }];
+    // A_B: no pick → implicit TIE guess → actual TIE → correct
+    // C_D: no pick → implicit TIE guess → actual C → wrong
+    expect(weeklyAccuracy(picks, tieResults, 'p', 9)).toEqual({ correct: 1, total: 2, pct: 0.5 });
+  });
+
+  it('scores a picked team as wrong when the game actually tied', () => {
+    const picks = [{ playerId: 'p', type: 'week_9', picks: { '2026_W9_A_B': 'A', '2026_W9_C_D': 'C' } }];
+    // A_B: picked A, actual TIE → wrong. C_D: picked C, actual C → correct.
+    expect(weeklyAccuracy(picks, tieResults, 'p', 9)).toEqual({ correct: 1, total: 2, pct: 0.5 });
+  });
+
+  it('lets a correct implicit tie guess continue a streak alongside real picks', () => {
+    const results2 = { games: { '2026_W1_A_B': 'A', '2026_W2_C_D': TIE } };
+    const picks = [
+      { playerId: 'p', type: 'week_1', picks: { '2026_W1_A_B': 'A' } }, // correct
+      { playerId: 'p', type: 'week_2', picks: {} },                     // no pick, actual TIE → correct
+    ];
+    expect(currentStreak(picks, results2, 'p', 'weekly')).toEqual({ count: 2, type: 'correct' });
+  });
+
+  it('a tied game is never an upset, even for a lopsided O/U gap', () => {
+    const schedule3 = [{ gameId: 'tg3', week: 9, homeTeam: 'G', awayTeam: 'H' }];
+    const lines = { G: 11, H: 4 }; // H would be the underdog if it won outright
+    const results3 = { games: { tg3: TIE } };
+    expect(upsetGames(results3, schedule3, lines)).toHaveLength(0);
   });
 });
 
@@ -370,10 +420,11 @@ describe('ouTrendingAccuracy', () => {
 
 describe('bestAndWorstWeek', () => {
   it('finds best and worst weeks for weekly picks', () => {
-    // P2 weekly: W1 = 50%, W2 = null (no picks) — only W1 counts
+    // P2 weekly: W1 = 50% (1/2), W2 = 0% (no doc — implicit tie guess misses
+    // the decided BUF_MIA game). Both weeks now count toward best/worst.
     const p2 = bestAndWorstWeek(PICKS, RESULTS, P2, 'weekly');
     expect(p2.best?.week).toBe(1);
-    expect(p2.worst?.week).toBe(1); // only one week with picks
+    expect(p2.worst?.week).toBe(2);
   });
 
   it('returns null when no games have results', () => {
@@ -387,6 +438,13 @@ describe('bestAndWorstWeek', () => {
     const p1 = bestAndWorstWeek(PICKS, RESULTS, P1, 'preseason');
     expect(p1.best?.week).toBe(2);
     expect(p1.worst?.week).toBe(1);
+  });
+});
+
+describe('preseasonWeekAccuracy', () => {
+  it('scores preseason picks against just one week of results', () => {
+    expect(preseasonWeekAccuracy(PICKS, RESULTS, P1, 1)).toEqual({ correct: 1, total: 2, pct: 0.5 });
+    expect(preseasonWeekAccuracy(PICKS, RESULTS, P1, 2)).toEqual({ correct: 1, total: 1, pct: 1 });
   });
 });
 

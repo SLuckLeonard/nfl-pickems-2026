@@ -4,6 +4,7 @@ import { db } from '../firebase/config.js';
 import { SCHEDULE } from '../data/schedule2026.js';
 import { TEAMS } from '../data/teams.js';
 import { useResults, useSeasonConfig } from '../hooks/useFirestore.js';
+import { TIE } from '../engine/statsEngine.js';
 import { isLocked, PRESEASON_LOCK } from '../data/weekLocks.js';
 import { useCurrentWeek } from '../hooks/useCurrentWeek.js';
 import { usePlayerIdentity } from '../hooks/usePlayerIdentity.js';
@@ -212,7 +213,14 @@ export default function ResultsEntry() {
                     <span className="result-team-btn__abbr">{away?.abbr ?? game.awayTeam}</span>
                     <span className="result-team-btn__name">{away?.name ?? game.awayTeam}</span>
                   </button>
-                  <span className="result-game__at">@</span>
+                  <button
+                    className={`result-tie-btn${winner === TIE ? ' result-tie-btn--selected' : ''}`}
+                    onClick={() => toggleWinner(game.gameId, TIE)}
+                    disabled={!isAdmin}
+                    title="Game ended in a tie"
+                  >
+                    Tie
+                  </button>
                   <button
                     className={`result-team-btn${winner === game.homeTeam ? ' result-team-btn--selected' : ''}`}
                     onClick={() => toggleWinner(game.gameId, game.homeTeam)}

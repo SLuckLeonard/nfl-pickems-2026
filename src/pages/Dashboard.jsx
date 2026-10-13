@@ -6,6 +6,7 @@ import { TEAMS } from '../data/teams.js';
 import StatCard from '../components/StatCard.jsx';
 import TeamLogo from '../components/TeamLogo.jsx';
 import {
+  TIE,
   weeklyAccuracy,
   overallAccuracy,
   rollingAccuracy,
@@ -19,6 +20,7 @@ import {
   ouStatus,
   ouTrendingAccuracy,
   bestAndWorstWeek,
+  preseasonWeekAccuracy,
   gamesDecided,
   gamesRemaining,
 } from '../engine/statsEngine.js';
@@ -56,27 +58,9 @@ function weekDateRange(week) {
   return `${MONTH_ABBR[first.getMonth()]} ${first.getDate()}–${MONTH_ABBR[last.getMonth()]} ${last.getDate()}`;
 }
 
-// Preseason pick accuracy for a single week's games (not in stats engine).
-function preseasonWeekAcc(allPicks, results, playerId, week) {
-  const doc = allPicks.find(p => p.playerId === playerId && p.type === 'preseason');
-  if (!doc) return { correct: 0, total: 0, pct: null };
-  const picksMap = doc.picks ?? {};
-  const weekResults = Object.fromEntries(
-    Object.entries(results?.games ?? {}).filter(([id]) => {
-      const m = id.match(/_W(\d+)_/);
-      return m && parseInt(m[1], 10) === week;
-    })
-  );
-  let correct = 0, total = 0;
-  for (const [gameId, result] of Object.entries(weekResults)) {
-    if (picksMap[gameId] === undefined) continue;
-    total++;
-    if (picksMap[gameId] === result) correct++;
-  }
-  return { correct, total, pct: total > 0 ? correct / total : null };
-}
-
-// Longest run of correct or incorrect picks in chronological order.
+// Longest run of correct or incorrect picks in chronological order. A game
+// the player didn't pick is an implicit TIE guess (see statsEngine.js) —
+// correct only if that game actually ended in a tie.
 function longestStreakOf(allPicks, results, playerId, streakType) {
   const allGames = results?.games ?? {};
   if (!Object.keys(allGames).length) return 0;
@@ -96,8 +80,7 @@ function longestStreakOf(allPicks, results, playerId, streakType) {
 
   let longest = 0, current = 0;
   for (const [gameId, result] of resolved) {
-    const picked = picksMap[gameId];
-    if (picked === undefined) continue;
+    const picked = picksMap[gameId] ?? TIE;
     const isCorrect = picked === result;
     const matches   = streakType === 'correct' ? isCorrect : !isCorrect;
     if (matches) { current++; longest = Math.max(longest, current); }
@@ -241,8 +224,8 @@ export default function Dashboard() {
       const week  = i + 1;
       const p1w   = p1 ? weeklyAccuracy(picks, results, p1.playerId, week) : { correct: 0, total: 0, pct: null };
       const p2w   = p2 ? weeklyAccuracy(picks, results, p2.playerId, week) : { correct: 0, total: 0, pct: null };
-      const p1pre = p1 ? preseasonWeekAcc(picks, results, p1.playerId, week) : { correct: 0, total: 0, pct: null };
-      const p2pre = p2 ? preseasonWeekAcc(picks, results, p2.playerId, week) : { correct: 0, total: 0, pct: null };
+      const p1pre = p1 ? preseasonWeekAccuracy(picks, results, p1.playerId, week) : { correct: 0, total: 0, pct: null };
+      const p2pre = p2 ? preseasonWeekAccuracy(picks, results, p2.playerId, week) : { correct: 0, total: 0, pct: null };
 
       let weekWinner = null;
       if (p1w.pct !== null && p2w.pct !== null) {
@@ -328,14 +311,10 @@ export default function Dashboard() {
       gameId, week, winner,
       away: TEAMS[game.awayTeam]?.abbr ?? game.awayTeam,
       home: TEAMS[game.homeTeam]?.abbr ?? game.homeTeam,
-      p1WeeklyCalled: p1WeeklyMap[gameId] === winner,
-      p1WeeklyPicked: p1WeeklyMap[gameId] !== undefined,
-      p1PreCalled:    p1PreMap[gameId]    === winner,
-      p1PrePicked:    p1PreMap[gameId]    !== undefined,
-      p2WeeklyCalled: p2WeeklyMap[gameId] === winner,
-      p2WeeklyPicked: p2WeeklyMap[gameId] !== undefined,
-      p2PreCalled:    p2PreMap[gameId]    === winner,
-      p2PrePicked:    p2PreMap[gameId]    !== undefined,
+      p1Weekly: p1WeeklyMap[gameId],
+      p1Pre:    p1PreMap[gameId],
+      p2Weekly: p2WeeklyMap[gameId],
+      p2Pre:    p2PreMap[gameId],
     }));
   }, [upsets, picks, p1, p2]);
 
@@ -349,9 +328,10 @@ export default function Dashboard() {
     return `Tied ${p1Wins}–${p2Wins}–${ties}`;
   }
 
-  function upsetCell(picked, called) {
-    if (!picked) return { cls: 'cell--muted', label: '—' };
-    return called
+  // No pick = implicit tie guess, which never matches a real upset winner —
+  // so an unpicked upset game shows as a miss (✗), same as a wrong pick.
+  function upsetCell(picked, winner) {
+    return (picked ?? TIE) === winner
       ? { cls: 'cell--success', label: '✓' }
       : { cls: 'cell--error',   label: '✗' };
   }
@@ -682,10 +662,10 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {upsetRows.map(row => {
-                  const p1w = upsetCell(row.p1WeeklyPicked, row.p1WeeklyCalled);
-                  const p1p = upsetCell(row.p1PrePicked,    row.p1PreCalled);
-                  const p2w = upsetCell(row.p2WeeklyPicked, row.p2WeeklyCalled);
-                  const p2p = upsetCell(row.p2PrePicked,    row.p2PreCalled);
+                  const p1w = upsetCell(row.p1Weekly, row.winner);
+                  const p1p = upsetCell(row.p1Pre,    row.winner);
+                  const p2w = upsetCell(row.p2Weekly, row.winner);
+                  const p2p = upsetCell(row.p2Pre,    row.winner);
                   return (
                     <tr key={row.gameId}>
                       <td><TeamLogo teamId={row.away} size={18} /> @ <TeamLogo teamId={row.home} size={18} /></td>

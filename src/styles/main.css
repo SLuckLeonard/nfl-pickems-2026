@@ -418,6 +418,11 @@ button {
   color: var(--color-warning);
 }
 
+.game-card__badge--tie {
+  background: rgba(136, 136, 136, 0.25);
+  color: var(--color-text);
+}
+
 .game-card__divider {
   text-align: center;
   font-size: 10px;
@@ -699,14 +704,33 @@ button {
   opacity: 0.8;
 }
 
-.result-game__at {
+.result-tie-btn {
+  flex-shrink: 0;
+  padding: var(--space-xs) var(--space-sm);
+  font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--color-border);
   text-transform: uppercase;
-  flex-shrink: 0;
+  background: var(--color-surface-el);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
 }
+
+.result-tie-btn:hover {
+  border-color: var(--color-warning);
+  color: var(--color-text);
+}
+
+.result-tie-btn--selected {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: var(--color-warning) !important;
+  color: var(--color-warning) !important;
+}
+
+.result-tie-btn:disabled { cursor: default; opacity: 0.6; }
 
 /* ── O/U Editor ──────────────────────────────────────────────────────────── */
 .ou-editor {

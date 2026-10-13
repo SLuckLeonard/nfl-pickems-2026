@@ -6,12 +6,21 @@
  * Data shapes expected by every function:
  *   picks    — Array of pick documents from Firestore (useAllPicks).
  *              Each doc: { playerId, type, picks: { [gameId]: teamId }, ... }
- *              type is "preseason" or "week_N" (e.g. "week_4").
- *   results  — results/2026 document: { games: { [gameId]: teamId }, lastUpdated }
+ *              type is "preseason" or "week_N" (e.g. "week_4"). Picks never
+ *              contain TIE — players only ever pick a team.
+ *   results  — results/2026 document: { games: { [gameId]: teamId|TIE }, lastUpdated }
  *   schedule — Array of game objects from schedule2026.js
+ *
+ * Scoring rule: a game a player didn't pick counts as an implicit TIE guess —
+ * correct only on the rare game that actually ends in a tie, wrong otherwise.
+ * Every function below that scores picks against results counts every decided
+ * game this way, whether or not the player made a pick for it.
  */
 
 import { TEAMS } from '../data/teams.js';
+
+/** Sentinel result value for a game that ended in a tie. */
+export const TIE = 'TIE';
 
 // ── Private helpers ────────────────────────────────────────────────────────
 
@@ -24,12 +33,17 @@ function weekFromGameId(gameId) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+/**
+ * Score a picks map against every decided game in resultsMap. A game the
+ * player didn't pick is treated as an implicit TIE guess, so it's always
+ * counted — correct only if that game actually ended in a tie.
+ */
 function countCorrect(picksMap, resultsMap) {
   let correct = 0, total = 0;
-  for (const [gameId, picked] of Object.entries(picksMap)) {
-    if (resultsMap[gameId] === undefined) continue;
+  for (const [gameId, actual] of Object.entries(resultsMap)) {
     total++;
-    if (picked === resultsMap[gameId]) correct++;
+    const picked = picksMap[gameId] ?? TIE;
+    if (picked === actual) correct++;
   }
   return { correct, total };
 }
@@ -80,8 +94,7 @@ function weekResultsMap(results, week) {
  */
 export function weeklyAccuracy(picks, results, playerId, week) {
   const doc = getPicksDoc(picks, playerId, `week_${week}`);
-  if (!doc) return { correct: 0, total: 0, pct: null };
-  const { correct, total } = countCorrect(doc.picks ?? {}, weekResultsMap(results, week));
+  const { correct, total } = countCorrect(doc?.picks ?? {}, weekResultsMap(results, week));
   return { correct, total, pct: safePct(correct, total) };
 }
 
@@ -98,8 +111,7 @@ export function overallAccuracy(picks, results, playerId, pickType) {
 
   if (pickType === 'preseason') {
     const doc = getPicksDoc(picks, playerId, 'preseason');
-    if (!doc) return { correct: 0, total: 0, pct: null };
-    const { correct, total } = countCorrect(doc.picks ?? {}, allGames);
+    const { correct, total } = countCorrect(doc?.picks ?? {}, allGames);
     return { correct, total, pct: safePct(correct, total) };
   }
 
@@ -158,8 +170,7 @@ export function currentStreak(picks, results, playerId, pickType) {
 
   for (let i = resolved.length - 1; i >= 0; i--) {
     const [gameId, result] = resolved[i];
-    const picked = picksMap[gameId];
-    if (picked === undefined) continue; // player didn't pick this game
+    const picked = picksMap[gameId] ?? TIE; // no pick = implicit tie guess
 
     const isCorrect = picked === result;
     if (streakType === null) streakType = isCorrect ? 'correct' : 'incorrect';
@@ -335,15 +346,13 @@ export function upsetPickAccuracy(picks, results, playerId, schedule, ouLines = 
   let wCorrect = 0, wTotal = 0;
   let pCorrect = 0, pTotal = 0;
 
+  // Every upset game counts, even one the player didn't pick — a missing
+  // pick is an implicit TIE guess, which never matches a real upset winner.
   for (const { gameId, winner } of upsets) {
-    if (weeklyMap[gameId] !== undefined) {
-      wTotal++;
-      if (weeklyMap[gameId] === winner) wCorrect++;
-    }
-    if (preMap[gameId] !== undefined) {
-      pTotal++;
-      if (preMap[gameId] === winner) pCorrect++;
-    }
+    wTotal++;
+    if ((weeklyMap[gameId] ?? TIE) === winner) wCorrect++;
+    pTotal++;
+    if ((preMap[gameId] ?? TIE) === winner) pCorrect++;
   }
 
   return {
@@ -470,6 +479,21 @@ export function ouTrendingAccuracy(picks, results, ouLines, playerId, schedule) 
 }
 
 /**
+ * Pre-season pick accuracy for a single week's games — i.e. how the
+ * pre-season picks fared against just the results that came in that week.
+ * @param {Object[]} picks
+ * @param {Object}   results
+ * @param {string}   playerId
+ * @param {number}   week
+ * @returns {{ correct: number, total: number, pct: number|null }}
+ */
+export function preseasonWeekAccuracy(picks, results, playerId, week) {
+  const doc = getPicksDoc(picks, playerId, 'preseason');
+  const { correct, total } = countCorrect(doc?.picks ?? {}, weekResultsMap(results, week));
+  return { correct, total, pct: safePct(correct, total) };
+}
+
+/**
  * The player's best and worst weeks by pick accuracy.
  * @param {Object[]} picks
  * @param {Object}   results
@@ -478,19 +502,14 @@ export function ouTrendingAccuracy(picks, results, ouLines, playerId, schedule) 
  * @returns {{ best: Object|null, worst: Object|null }}
  */
 export function bestAndWorstWeek(picks, results, playerId, pickType) {
-  const preDoc = pickType === 'preseason'
-    ? getPicksDoc(picks, playerId, 'preseason')
-    : null;
-
-  const weekStats = resolvedWeeks(results).map(week => {
-    if (pickType === 'weekly') {
-      return { week, ...weeklyAccuracy(picks, results, playerId, week) };
-    }
-    // preseason: compare the preseason picks for that week's games against results
-    const wResults = weekResultsMap(results, week);
-    const { correct, total } = countCorrect(preDoc?.picks ?? {}, wResults);
-    return { week, correct, total, pct: safePct(correct, total) };
-  }).filter(s => s.total > 0);
+  const weekStats = resolvedWeeks(results)
+    .map(week => ({
+      week,
+      ...(pickType === 'weekly'
+        ? weeklyAccuracy(picks, results, playerId, week)
+        : preseasonWeekAccuracy(picks, results, playerId, week)),
+    }))
+    .filter(s => s.total > 0);
 
   if (weekStats.length === 0) return { best: null, worst: null };
 

@@ -1,4 +1,5 @@
 import { TEAMS } from '../data/teams.js';
+import { TIE } from '../engine/statsEngine.js';
 import TeamLogo from './TeamLogo.jsx';
 
 /**
@@ -10,6 +11,9 @@ import TeamLogo from './TeamLogo.jsx';
  *   result   — this team won but player didn't pick them → green (dimmer)
  *   selected — player picked this team, no result yet   → accent blue
  *   default  — no pick, no result                       → muted
+ * On a tied result (TIE), neither team button is a "winner" — a picked team
+ * shows as wrong (a tie isn't the win they called), and a "Final: Tie" badge
+ * appears in the meta row.
  *
  * @param {{ game: Object, picked: string|null, result: string|null,
  *            locked: boolean, onPick: (teamId: string) => void }} props
@@ -34,6 +38,9 @@ export default function GameCard({ game, picked, result, locked, onPick }) {
         )}
         {kickoffLabel && <span className="game-card__kickoff">{kickoffLabel}</span>}
         {network && <span className="game-card__network">{network}</span>}
+        {result === TIE && (
+          <span className="game-card__badge game-card__badge--tie">Final: Tie</span>
+        )}
       </div>
 
       <TeamButton

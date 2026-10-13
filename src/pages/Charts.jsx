@@ -13,6 +13,7 @@ import {
   predictedWinsFromPicks,
   ouPace,
   ouTrendingAccuracy,
+  preseasonWeekAccuracy,
 } from '../engine/statsEngine.js';
 import '../styles/charts.css';
 
@@ -51,26 +52,6 @@ const TEAM_IDS = Object.keys(TEAMS);
 function toPct(val) {
   if (val === null || val === undefined) return null;
   return Math.round(val * 1000) / 10;
-}
-
-// Preseason pick accuracy for a specific week's games (mirrors Dashboard helper)
-function preSeasonWeekAcc(allPicks, results, playerId, week) {
-  const doc = allPicks.find(p => p.playerId === playerId && p.type === 'preseason');
-  if (!doc) return { pct: null };
-  const picksMap = doc.picks ?? {};
-  const weekGames = Object.fromEntries(
-    Object.entries(results?.games ?? {}).filter(([id]) => {
-      const m = id.match(/_W(\d+)_/);
-      return m && parseInt(m[1], 10) === week;
-    })
-  );
-  let correct = 0, total = 0;
-  for (const [gameId, result] of Object.entries(weekGames)) {
-    if (picksMap[gameId] === undefined) continue;
-    total++;
-    if (picksMap[gameId] === result) correct++;
-  }
-  return { pct: total > 0 ? correct / total : null };
 }
 
 // Shared Recharts axis/grid props for the dark theme
@@ -157,8 +138,8 @@ export default function Charts() {
     return weeksWithResults.map(week => {
       const p1w  = p1 ? weeklyAccuracy(picks, results, p1.playerId, week)     : { pct: null };
       const p2w  = p2 ? weeklyAccuracy(picks, results, p2.playerId, week)     : { pct: null };
-      const p1pr = p1 ? preSeasonWeekAcc(picks, results, p1.playerId, week)   : { pct: null };
-      const p2pr = p2 ? preSeasonWeekAcc(picks, results, p2.playerId, week)   : { pct: null };
+      const p1pr = p1 ? preseasonWeekAccuracy(picks, results, p1.playerId, week) : { pct: null };
+      const p2pr = p2 ? preseasonWeekAccuracy(picks, results, p2.playerId, week) : { pct: null };
       return {
         week:     `Wk ${week}`,
         p1Weekly: toPct(p1w.pct),

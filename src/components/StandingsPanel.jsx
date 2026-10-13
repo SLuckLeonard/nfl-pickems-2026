@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { TEAMS } from '../data/teams.js';
 import { getDivisionStandings } from '../engine/bracketEngine.js';
+import { TIE } from '../engine/statsEngine.js';
 import TeamLogo from './TeamLogo.jsx';
 
 const DIV_ORDER = {
@@ -22,6 +23,7 @@ export default function StandingsPanel({ localPicks, schedule, results }) {
     if (!hasResults) return {};
     const counts = {};
     for (const teamId of Object.values(results?.games ?? {})) {
+      if (teamId === TIE) continue; // a tie is a win for neither team
       counts[teamId] = (counts[teamId] ?? 0) + 1;
     }
     return counts;
